@@ -42,6 +42,7 @@ namespace EFTBallisticCalculator.HUD
             // 初始化子面板
             FCSPanel.InitCfg(config);
             EnvPanel.InitCfg(config);
+            HealthPanel.InitCfg(config);
         }
         public static void UpdateRainbowColor()
         {
@@ -69,7 +70,7 @@ namespace EFTBallisticCalculator.HUD
             currentY = FCSPanel.Draw(startX, currentY, scale, hasWeapon);
             currentY += PanelSpacing.Value * scale;
             EnvPanel.Draw(startX, currentY, scale);
-
+            HealthPanel.Draw(startX, currentY, scale);
             // 中心锁定标记
             if (hasWeapon && PluginsCore._lockedHorizontalDist > 0f)
             {

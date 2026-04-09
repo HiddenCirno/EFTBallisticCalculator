@@ -268,7 +268,18 @@ namespace EFTBallisticCalculator
                     { "cfg_env_active_name", "Show Env Panel" },
                     { "cfg_env_active_desc", "Enable or disable the Environment panel rendering." },
                     { "cfg_env_color_name", "Env Color" },
-                    { "cfg_env_color_desc", "Customize the UI color of the Environment panel." }
+                    { "cfg_env_color_desc", "Customize the UI color of the Environment panel." },
+                    // --- Health Panel ---
+                    { "cfg_health_x_name", "Health X Offset" },
+                    { "cfg_health_x_desc", "Independent X-axis offset for the Health panel." },
+                    { "cfg_health_y_name", "Health Y Offset" },
+                    { "cfg_health_y_desc", "Independent Y-axis offset for the Health panel." },
+                    { "cfg_health_scale_name", "Health Scale" },
+                    { "cfg_health_scale_desc", "Independent scaling factor for the Health panel." },
+                    { "cfg_health_active_name", "Show Health Panel" },
+                    { "cfg_health_active_desc", "Enable or disable the Biometric Health panel rendering." },
+                    { "cfg_health_color_name", "Health Color" },
+                    { "cfg_health_color_desc", "Customize the UI color of the Health panel." }
                 }
             },
             {
@@ -344,7 +355,18 @@ namespace EFTBallisticCalculator
                     { "cfg_env_active_name", "显示环境面板" },
                     { "cfg_env_active_desc", "是否在屏幕上渲染环境数据。" },
                     { "cfg_env_color_name", "环境面板颜色" },
-                    { "cfg_env_color_desc", "自定义环境数据面板的静态基础颜色。" }
+                    { "cfg_env_color_desc", "自定义环境数据面板的静态基础颜色。" },
+                    // --- Health Panel ---
+                    { "cfg_health_x_name", "健康面板 X 偏移" },
+                    { "cfg_health_x_desc", "生理健康监控面板独立的 X 轴横向偏移量。" },
+                    { "cfg_health_y_name", "健康面板 Y 偏移" },
+                    { "cfg_health_y_desc", "生理健康监控面板独立的 Y 轴纵向偏移量。" },
+                    { "cfg_health_scale_name", "健康面板缩放" },
+                    { "cfg_health_scale_desc", "生理健康监控面板独立的 UI 缩放乘数。" },
+                    { "cfg_health_active_name", "显示健康面板" },
+                    { "cfg_health_active_desc", "是否在屏幕上渲染生物体征与健康数据。" },
+                    { "cfg_health_color_name", "健康面板颜色" },
+                    { "cfg_health_color_desc", "自定义生理健康监控面板的静态基础颜色。" }
                 }
             }
         };
