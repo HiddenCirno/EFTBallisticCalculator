@@ -9,19 +9,35 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> GlobalStartYOffset;
         public static ConfigEntry<float> GlobalScale;
         public static ConfigEntry<float> PanelSpacing;
+        public static ConfigEntry<float> RainbowUISpeed;
+        public static ConfigEntry<bool> RainbowUI;
+        public static Color RainbowColor = new Color(1f, 1f, 1f, 0.85f);
 
-        public static void Init(ConfigFile config)
+        public static void InitCfg(ConfigFile config)
         {
             GlobalOffsetX = config.Bind("Left HUD Pannel Global", "Global X Offset", 30f, "HUD 整体距离屏幕左侧绝对距离");
             GlobalStartYOffset = config.Bind("Left HUD Pannel Global", "Global Y Offset", -180f, "HUD 整体相对屏幕中心的 Y 轴偏移");
             GlobalScale = config.Bind("Left HUD Pannel Global", "Global Scale", 1.0f, "全局 UI 缩放比例");
             PanelSpacing = config.Bind("Left HUD Pannel Global", "Panel Spacing", 15f, "面板之间的垂直间距");
+            RainbowUISpeed = config.Bind("Left HUD Pannel Global", "RainbowUISpeed", 0.25f, "彩虹UI闪烁速度");
+            RainbowUI = config.Bind("Left HUD Pannel Global", "RainbowUI", false, "让你的面板像彩虹一样酷炫!");
 
             // 初始化子面板
-            FCSPanel.Init(config);
-            EnvPanel.Init(config);
+            FCSPanel.InitCfg(config);
+            EnvPanel.InitCfg(config);
         }
-
+        public static void UpdateRainbowColor()
+        {
+            if (RainbowUI.Value)
+            {
+                // Time.time * 0.25f 控制颜色变化的速度，Mathf.Repeat 保证色相在 0-1 之间循环
+                float hue = Mathf.Repeat(Time.time * 0.25f, 1f);
+                // 转换 HSV 到 RGB (饱和度 0.8，明度 1.0，保证颜色鲜艳不刺眼)
+                Color hsvColor = UnityEngine.Color.HSVToRGB(hue, 0.8f, 1f);
+                // 重新拼装 Color，保留 0.85 的透明度
+                RainbowColor = new Color(hsvColor.r, hsvColor.g, hsvColor.b, 0.85f);
+            }
+        }
         public static void DrawGUI()
         {
             if (Camera.main == null || PluginsCore.CorrectPlayer == null) return;
@@ -31,7 +47,7 @@ namespace EFTBallisticCalculator.HUD
             float startX = GlobalOffsetX.Value;
             float currentY = (Screen.height / 2f) + GlobalStartYOffset.Value;
             float scale = GlobalScale.Value;
-
+            UpdateRainbowColor();
             // 绘制顺序流
             currentY = FCSPanel.Draw(startX, currentY, scale, hasWeapon);
             currentY += PanelSpacing.Value * scale;

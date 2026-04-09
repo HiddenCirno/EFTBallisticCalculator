@@ -10,13 +10,15 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> OffsetY;
         public static ConfigEntry<float> Scale;
         public static ConfigEntry<bool> Active;
+        public static ConfigEntry<Color> Color;
 
-        public static void Init(ConfigFile config)
+        public static void InitCfg(ConfigFile config)
         {
             OffsetX = config.Bind("Environment Panel", "X Offset", 0f, "环境面板独立 X 轴偏移");
             OffsetY = config.Bind("Environment Panel", "Y Offset", 0f, "环境面板独立 Y 轴偏移");
             Scale = config.Bind("Environment Panel", "Scale", 1.0f, "环境面板独立缩放比例");
             Active = config.Bind("Environment Panel", "Active", true, "显示环境面板");
+            Color = config.Bind("Environment Panel", "Color", new Color(0.3f, 0.8f, 0.9f, 0.85f), "环境面板颜色");
         }
 
         public static void Draw(float startX, float startY, float globalScale)
@@ -33,7 +35,7 @@ namespace EFTBallisticCalculator.HUD
 
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = titleSize };
             GUIStyle textStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = textSize };
-            Color atmosColor = new Color(0.3f, 0.8f, 0.9f, 0.85f);
+            Color atmosColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : Color.Value;
 
             string realTimeStr = DateTime.Now.ToString("HH:mm:ss");
             string tarkovTimeStr = "UNKNOWN";
@@ -53,7 +55,7 @@ namespace EFTBallisticCalculator.HUD
             float tempF = tempC * 1.8f + 32;
             float hPa = 1013.25f - (altitude * 0.012f) + (Mathf.PerlinNoise(Time.time * 0.0035f, PluginsCore._weatherSeedGlobal + 101f) * 2.25f - 1.05f);
 
-            float relativeWindAngle = windDir - PluginsCore.GetAzimuth().eulerAngles.y;
+            float relativeWindAngle = windDir - BallisticsCalculator.GetAzimuth().eulerAngles.y;
             float crossWind = Mathf.Sin(relativeWindAngle * Mathf.Deg2Rad) * windSpeed;
             float headWind = Mathf.Cos(relativeWindAngle * Mathf.Deg2Rad) * windSpeed;
             // 预处理变量

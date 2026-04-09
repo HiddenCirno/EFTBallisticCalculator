@@ -9,13 +9,15 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> OffsetY;
         public static ConfigEntry<float> Scale;
         public static ConfigEntry<bool> Active;
+        public static ConfigEntry<Color> Color;
 
-        public static void Init(ConfigFile config)
+        public static void InitCfg(ConfigFile config)
         {
             OffsetX = config.Bind("FCS Panel", "X Offset", 0f, "火控面板独立 X 轴偏移");
             OffsetY = config.Bind("FCS Panel", "Y Offset", 0f, "火控面板独立 Y 轴偏移");
             Scale = config.Bind("FCS Panel", "Scale", 1.0f, "火控面板独立缩放比例");
             Active = config.Bind("FCS Panel", "Active", true, "显示火控面板");
+            Color = config.Bind("FCS Panel", "Color", new Color(0.2f, 1f, 0.4f, 0.9f), "火控面板颜色");
         }
 
         public static float Draw(float startX, float startY, float globalScale, bool hasWeapon)
@@ -32,7 +34,7 @@ namespace EFTBallisticCalculator.HUD
 
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = titleSize };
             GUIStyle textStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = textSize };
-            Color mainColor = new Color(0.2f, 1f, 0.4f, 0.9f);
+            Color mainColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : Color.Value;
 
             var fc = PluginsCore.CorrectPlayer.HandsController as EFT.Player.FirearmController;
             Vector3 currentPos = hasWeapon ? fc.CurrentFireport.position : Camera.main.transform.position;
@@ -43,19 +45,19 @@ namespace EFTBallisticCalculator.HUD
             float dist3D = 0f;
             if (isFcsLocked)
             {
-                dist3D = Vector3.Distance(currentPos, PluginsCore.ImpactMarker != null ? PluginsCore.ImpactMarker.transform.position : currentPos + fc.WeaponDirection * PluginsCore._lockedHorizontalDist);
+                dist3D = Vector3.Distance(currentPos, PluginsCore._impactMarker != null ? PluginsCore._impactMarker.transform.position : currentPos + fc.WeaponDirection * PluginsCore._lockedHorizontalDist);
             }
 
-            string compassHeading = HUDManager.GetCompassDir(PluginsCore.GetAzimuth().eulerAngles.y);
-            float rollAngle = PluginsCore.GetAzimuth().eulerAngles.z;
+            string compassHeading = HUDManager.GetCompassDir(BallisticsCalculator.GetAzimuth().eulerAngles.y);
+            float rollAngle = BallisticsCalculator.GetAzimuth().eulerAngles.z;
             if (rollAngle > 180f) rollAngle -= 360f;
-            float vertAngle = PluginsCore.GetAzimuth().eulerAngles.x;
+            float vertAngle = BallisticsCalculator.GetAzimuth().eulerAngles.x;
             if (vertAngle > 180f) vertAngle -= 360f;
 
             string nodata = LocaleManager.Get("no_data");
 
             // --- 1. 预处理变量值 (Value) ---
-            string headingVal = string.Format(LocaleManager.Get("fcs_val_heading"), PluginsCore.GetAzimuth().eulerAngles.y, compassHeading);
+            string headingVal = string.Format(LocaleManager.Get("fcs_val_heading"), BallisticsCalculator.GetAzimuth().eulerAngles.y, compassHeading);
 
             string rangeStr = nodata;
             if (hasWeapon)

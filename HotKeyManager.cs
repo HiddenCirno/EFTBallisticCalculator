@@ -1,4 +1,5 @@
 ﻿using BepInEx.Configuration;
+using EFTBallisticCalculator.HUD;
 using UnityEngine;
 using static GClass2175;
 
@@ -44,6 +45,38 @@ namespace EFTBallisticCalculator.Core
             if (KeyDistUp1.Value.IsDown()) deltaDist += 1f;
             if (KeyDistDown1.Value.IsDown()) deltaDist -= 1f;
             return deltaDist;
+        }
+        public static void ListenToHotKeyInput()
+        {
+            // 2. 集中处理按键状态
+            if (KeyEnvPannel.Value.IsDown()) EnvPanel.Active.Value = !EnvPanel.Active.Value;
+            if (KeyFcsPannel.Value.IsDown()) FCSPanel.Active.Value = !FCSPanel.Active.Value;
+
+            if (Input.GetKeyDown(KeyCode.T))
+            {
+                BallisticsCalculator.ExecuteFcsLogic();
+            }
+
+            if (PluginsCore._currentFC != null)
+            {
+                if (KeyFcsClear.Value.IsDown())
+                {
+                    PluginsCore._lockedHorizontalDist = 0f;
+                }
+
+                float deltaDist = GetManualDistanceDelta();
+
+                if (deltaDist != 0f)
+                {
+                    PluginsCore._lockedHorizontalDist += deltaDist;
+                    PluginsCore._lockedHorizontalDist = (int)PluginsCore._lockedHorizontalDist;
+
+                    if (PluginsCore._lockedHorizontalDist <= 0f)
+                    {
+                        PluginsCore._lockedHorizontalDist = 0f;
+                    }
+                }
+            }
         }
     }
 }
