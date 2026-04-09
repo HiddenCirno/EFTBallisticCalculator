@@ -380,6 +380,6 @@ namespace EFTBallisticCalculator
         public int? Order;
 
         // 如果设置为 true，这个设置项在高级设置里才显示
-        public bool? Advanced;
+        public bool? IsAdvanced;
     }
 }
