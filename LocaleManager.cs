@@ -8,7 +8,7 @@ namespace EFTBallisticCalculator
     public enum AppLanguage
     {
         English,
-        Chinese
+        简体中文
     }
 
     public static class LocaleManager
@@ -85,7 +85,7 @@ namespace EFTBallisticCalculator
                 }
             },
             {
-                AppLanguage.Chinese, new Dictionary<string, string>
+                AppLanguage.简体中文, new Dictionary<string, string>
                 {
                     // --- 通用与状态 ---
                     { "no_data", "---" },
