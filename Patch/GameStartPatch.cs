@@ -2,7 +2,7 @@
 using HarmonyLib;
 using UnityEngine;
 
-namespace EFTBallisticCalculator
+namespace EFTBallisticCalculator.Patch
 {
     /// <summary>
     /// GameWorld 启动补丁，在此阶段拦截实例并初始化相关的环境种子数据
@@ -15,7 +15,7 @@ namespace EFTBallisticCalculator
         {
             PluginsCore.CorrectGameWorld = __instance;
             PluginsCore.CorrectPlayer = __instance.MainPlayer;
-            PluginsCore._weatherSeedGlobal = UnityEngine.Random.Range(0f, 100000f);
+            PluginsCore._weatherSeedGlobal = Random.Range(0f, 100000f);
             PluginsCore._weatherRng = new System.Random((int)PluginsCore._weatherSeedGlobal);
 
             PluginsCore._weatherSeedMap.windSpeed.x = PluginsCore._weatherRng.Next(0, 100000);

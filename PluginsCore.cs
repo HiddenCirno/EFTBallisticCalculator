@@ -1,29 +1,17 @@
 ﻿using BepInEx;
-using BepInEx.Configuration;
 using EFT;
 using EFT.InventoryLogic;
 using HarmonyLib;
 using UnityEngine;
+using EFTBallisticCalculator.Core;
+using EFTBallisticCalculator.HUD;
 
 namespace EFTBallisticCalculator
 {
     [BepInPlugin(PluginsInfo.GUID, PluginsInfo.NAME, PluginsInfo.VERSION)]
     public class PluginsCore : BaseUnityPlugin
     {
-        #region BepInEx 快捷键配置
-        public static ConfigEntry<KeyboardShortcut> KeyFcsToggle;
-        public static ConfigEntry<KeyboardShortcut> KeyFcsClear;
-        public static ConfigEntry<KeyboardShortcut> KeyDistUp100;
-        public static ConfigEntry<KeyboardShortcut> KeyDistDown100;
-        public static ConfigEntry<KeyboardShortcut> KeyDistUp10;
-        public static ConfigEntry<KeyboardShortcut> KeyDistDown10;
-        public static ConfigEntry<KeyboardShortcut> KeyDistUp1;
-        public static ConfigEntry<KeyboardShortcut> KeyDistDown1;
-        #endregion
-
         #region 全局状态缓存
-        public static bool _isFcsActive = false;
-        public static bool _isHudActive = true;
         public static bool _hasAmmo = false;
 
         public static float _currentSpeed = 0f;
@@ -33,13 +21,6 @@ namespace EFTBallisticCalculator
 
         public static float _lockedHorizontalDist;
         public static float _lockedTOF;
-        #endregion
-
-        #region UI 排版参数
-        public static float _hudOffsetX = 30f;
-        public static float _hudStartYOffset = -180f;
-        public static float _hudScale = 1.0f;
-        public static float _panelSpacing = 15f;
         #endregion
 
         #region 跨脚本对象与环境
@@ -59,7 +40,6 @@ namespace EFTBallisticCalculator
         public static Player CorrectPlayer { get; set; }
         public static GameWorld CorrectGameWorld { get; set; }
 
-        // 暴露给 UI 的公有属性
         public static GameObject ImpactMarker => Instance._impactMarker;
         private EFT.Player.FirearmController _currentFC;
         private static Camera _cachedOpticCamera;
@@ -69,19 +49,11 @@ namespace EFTBallisticCalculator
 
         public void Awake()
         {
-            Instance = this; // 保存单例供内部访问
+            Instance = this;
 
-            KeyFcsToggle = Config.Bind("1. Controls", "Toggle HUD", new KeyboardShortcut(KeyCode.KeypadDivide), "开启/关闭火控面板");
-            KeyFcsClear = Config.Bind("1. Controls", "Clear Target (Unlock)", new KeyboardShortcut(KeyCode.Backspace), "脱锁并清除距离数据");
-
-            KeyDistUp100 = Config.Bind("2. Manual Dial", "Distance +100m", new KeyboardShortcut(KeyCode.UpArrow, KeyCode.LeftShift), "手动增加距离 100m");
-            KeyDistDown100 = Config.Bind("2. Manual Dial", "Distance -100m", new KeyboardShortcut(KeyCode.DownArrow, KeyCode.LeftShift), "手动减少距离 100m");
-
-            KeyDistUp10 = Config.Bind("2. Manual Dial", "Distance +10m", new KeyboardShortcut(KeyCode.UpArrow, KeyCode.LeftAlt), "手动增加距离 10m");
-            KeyDistDown10 = Config.Bind("2. Manual Dial", "Distance -10m", new KeyboardShortcut(KeyCode.DownArrow, KeyCode.LeftAlt), "手动减少距离 10m");
-
-            KeyDistUp1 = Config.Bind("2. Manual Dial", "Distance +1m", new KeyboardShortcut(KeyCode.UpArrow, KeyCode.LeftControl), "手动增加距离 1m");
-            KeyDistDown1 = Config.Bind("2. Manual Dial", "Distance -1m", new KeyboardShortcut(KeyCode.DownArrow, KeyCode.LeftControl), "手动减少距离 1m");
+            // 1. 下发配置给两大管家
+            HotKeyManager.Init(Config);
+            HUDManager.Init(Config);
 
             var harmony = new Harmony(PluginsInfo.GUID);
             harmony.PatchAll();
@@ -112,8 +84,9 @@ namespace EFTBallisticCalculator
 
             UpdateOpticCache();
 
-            // 监听输入
-            if (KeyFcsToggle.Value.IsDown()) _isHudActive = !_isHudActive;
+            // 2. 集中处理按键状态
+            if (HotKeyManager.KeyEnvPannel.Value.IsDown()) EnvPanel.Active.Value = !EnvPanel.Active.Value;
+            if (HotKeyManager.KeyFcsPannel.Value.IsDown()) FCSPanel.Active.Value = !FCSPanel.Active.Value;
 
             if (Input.GetKeyDown(KeyCode.T))
             {
@@ -122,18 +95,12 @@ namespace EFTBallisticCalculator
 
             if (_currentFC != null)
             {
-                if (KeyFcsClear.Value.IsDown())
+                if (HotKeyManager.KeyFcsClear.Value.IsDown())
                 {
                     _lockedHorizontalDist = 0f;
                 }
 
-                float deltaDist = 0f;
-                if (KeyDistUp100.Value.IsDown()) deltaDist += 100f;
-                if (KeyDistDown100.Value.IsDown()) deltaDist -= 100f;
-                if (KeyDistUp10.Value.IsDown()) deltaDist += 10f;
-                if (KeyDistDown10.Value.IsDown()) deltaDist -= 10f;
-                if (KeyDistUp1.Value.IsDown()) deltaDist += 1f;
-                if (KeyDistDown1.Value.IsDown()) deltaDist -= 1f;
+                float deltaDist = HotKeyManager.GetManualDistanceDelta();
 
                 if (deltaDist != 0f)
                 {
@@ -147,7 +114,7 @@ namespace EFTBallisticCalculator
                 }
             }
 
-            // 3D 渲染
+            // 3. 渲染物理预测球
             if (isFcsLocked)
             {
                 bool isAiming = false;
@@ -197,7 +164,6 @@ namespace EFTBallisticCalculator
             }
             else
             {
-
                 _lockedHorizontalDist = 0f;
             }
         }
@@ -207,7 +173,6 @@ namespace EFTBallisticCalculator
             return (_cachedOpticCamera != null && _cachedOpticCamera.isActiveAndEnabled) ? _cachedOpticCamera.transform : Camera.main.transform;
         }
 
-        // --- 委托给 UI 管理器 ---
         public void OnGUI()
         {
             HUDManager.DrawGUI();
