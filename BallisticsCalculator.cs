@@ -111,7 +111,12 @@ namespace EFTBallisticCalculator
         public static void ExecuteFcsLogic()
         {
             if (PluginsCore._currentFC == null) return;
-            Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+            Camera activeCam = (PluginsCore._cachedOpticCamera != null && PluginsCore._cachedOpticCamera.isActiveAndEnabled)
+                ? PluginsCore._cachedOpticCamera
+                : Camera.main;
+
+            if (activeCam == null) return; // 防御性空值检查
+            Ray ray = activeCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
             if (Physics.Raycast(ray, out RaycastHit hit, 1000f, PluginsCore._layerMask))
             {
                 Vector3 fireportPos = PluginsCore._currentFC.CurrentFireport.position;

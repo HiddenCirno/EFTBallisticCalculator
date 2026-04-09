@@ -211,6 +211,8 @@ namespace EFTBallisticCalculator
                     { "cfg_hotkey_env_desc", "Toggle the Environment panel display on/off." },
                     { "cfg_hotkey_clear_name", "Clear Target (Unlock)" },
                     { "cfg_hotkey_clear_desc", "Unlock the target and clear distance data." },
+                    { "cfg_hotkey_track_name", "Track Target (Lock)" },
+                    { "cfg_hotkey_track_desc", "Track the target and calculate distance data." },
 
                     // --- 2. Manual Dial ---
                     { "cfg_dial_up_100_name", "Distance +100m" },
@@ -285,6 +287,8 @@ namespace EFTBallisticCalculator
                     { "cfg_hotkey_env_desc", "开启/关闭左侧的环境数据面板。" },
                     { "cfg_hotkey_clear_name", "脱锁并清除数据" },
                     { "cfg_hotkey_clear_desc", "强制解除锁定，并清空当前测距数据。" },
+                    { "cfg_hotkey_track_name", "锁定目标" },
+                    { "cfg_hotkey_track_desc", "锁定当前目标并测算距离。" },
 
                     // --- 2. Manual Dial ---
                     { "cfg_dial_up_100_name", "距离 +100m" },

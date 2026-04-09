@@ -34,8 +34,8 @@ namespace EFTBallisticCalculator.Core
                 new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_clear_desc"), null,
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_clear_name") }));
             KeyFcsTrack = config.Bind("Controls / 控制", "锁定目标", new KeyboardShortcut(KeyCode.T),
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_clear_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_clear_name") }));
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_track_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_track_name") }));
 
             // --- 2. Manual Dial ---
             KeyDistUp100 = config.Bind("Controls / 控制", "距离+100米", new KeyboardShortcut(KeyCode.UpArrow, KeyCode.LeftShift),
