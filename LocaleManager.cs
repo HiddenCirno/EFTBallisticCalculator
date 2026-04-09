@@ -97,10 +97,10 @@ namespace EFTBallisticCalculator
                     { "fcs_status_optic_sync", "瞄准中" },
                     
                     // --- FCS 标题 ---
-                    { "fcs_title_no_weapon", "[ 火控计算机: 无武器 ]" },
-                    { "fcs_title_no_ammo",   "[ 火控计算机: 缺少弹药 ]" },
-                    { "fcs_title_locked",    "[ 火控计算机: 目标锁定 ]" },
-                    { "fcs_title_standby",   "[ 火控计算机: 待机中 ]" },
+                    { "fcs_title_no_weapon", "[ 火控计算机 : 无武器 ]" },
+                    { "fcs_title_no_ammo",   "[ 火控计算机 : 缺少弹药 ]" },
+                    { "fcs_title_locked",    "[ 火控计算机 : 目标锁定 ]" },
+                    { "fcs_title_standby",   "[ 火控计算机 : 待机中 ]" },
 
                     // --- FCS 标签 (Label) : 仅接受拼装好的字符串 ---
                     { "fcs_lbl_heading", "目视方向 : {0}" },
@@ -122,10 +122,10 @@ namespace EFTBallisticCalculator
                     { "fcs_val_bc",      "(弹道系数: {0:F3})" },
 
                     // --- Env 标签 (Label) ---
-                    { "env_title", "<b>[ 环境传感器 ]</b>" },
-                    { "env_lbl_loc",  "当前位置  : {0}" },
+                    { "env_title", "<b>[ 环境数据 ]</b>" },
+                    { "env_lbl_loc",  "当前位置 : {0}" },
                     { "env_lbl_gps",  "坐标信息 : {1} | {0}" },
-                    { "env_lbl_time", "当地时间: {0} | 现实时间: {1}" },
+                    { "env_lbl_time", "当地时间 : {0} | 现实时间: {1}" },
                     { "env_lbl_wind_dir", "风向     : {0}" },
                     { "env_lbl_cross",    "水平风速 : {0}" },
                     { "env_lbl_vect",     "纵直风速 : {0}" },
