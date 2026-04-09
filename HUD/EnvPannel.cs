@@ -56,27 +56,35 @@ namespace EFTBallisticCalculator.HUD
             float relativeWindAngle = windDir - PluginsCore.GetAzimuth().eulerAngles.y;
             float crossWind = Mathf.Sin(relativeWindAngle * Mathf.Deg2Rad) * windSpeed;
             float headWind = Mathf.Cos(relativeWindAngle * Mathf.Deg2Rad) * windSpeed;
-            string crossDir = crossWind > 0 ? "◄ L" : "R ►";
-            string headDir = headWind > 0 ? "HEAD" : "TAIL";
+            // 预处理变量
+            string crossDir = crossWind > 0 ? LocaleManager.Get("env_dir_left") : LocaleManager.Get("env_dir_right");
+            string headDir = headWind > 0 ? LocaleManager.Get("env_dir_head") : LocaleManager.Get("env_dir_tail");
 
-            double baseLat = 60.051200;
-            double baseLon = 29.351400;
-            double currentLat = baseLat + (playerTransform.z * 0.000009);
-            double currentLon = baseLon + (playerTransform.x * 0.000018);
-            string gpsLat = $"{currentLat:F5}° N";
-            string gpsLon = $"{currentLon:F5}° E";
+            double baseLat = 60.051200 + (playerTransform.z * 0.000009);
+            double baseLon = 29.351400 + (playerTransform.x * 0.000018);
+            string latVal = string.Format(LocaleManager.Get("env_val_lat"), baseLat);
+            string lonVal = string.Format(LocaleManager.Get("env_val_lon"), baseLon);
 
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY, 400, 25), "<b>[ ENVIRONMENT SENSORS ACTIVE ]</b>", atmosColor, titleStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 1, rectWidth, lh), $"LOCATION  : {PluginsCore._cachedLocationName}", atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 2, rectWidth, lh), $"GPS COORD : {gpsLat} | {gpsLon}", atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 3, rectWidth, lh), $"LOCAL TIME: {tarkovTimeStr} | REAL: {realTimeStr}", atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 4, rectWidth, lh), $"WIND DIR  : {windDir:000}° [{HUDManager.GetCompassDir(windDir)}] | {windSpeed:F1} M/S", atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 5, rectWidth, lh), $"CROSSWIND : {Mathf.Abs(crossWind):F1} M/S [{crossDir}]", atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 6, rectWidth, lh), $"VECT WIND : {Mathf.Abs(headWind):F1} M/S [{headDir}]", atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 7, rectWidth, lh), $"ALT (MSL) : {altitude:F1} M", atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 8, rectWidth, lh), $"PRESSURE  : {hPa:F1} HPA", atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 9, rectWidth, lh), $"HUMIDITY  : {humidity:F1} %", atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 10, rectWidth, lh), $"TEMP      : {tempC:F1} °C | {tempF:F1} °F", atmosColor, textStyle);
+            string windDirVal = string.Format(LocaleManager.Get("env_val_wind_dir"), windDir, HUDManager.GetCompassDir(windDir), windSpeed);
+            string crossVal = string.Format(LocaleManager.Get("env_val_wind_spd"), Mathf.Abs(crossWind), crossDir);
+            string vectVal = string.Format(LocaleManager.Get("env_val_wind_spd"), Mathf.Abs(headWind), headDir);
+            string altVal = string.Format(LocaleManager.Get("env_val_alt"), altitude);
+            string pressVal = string.Format(LocaleManager.Get("env_val_press"), hPa);
+            string humVal = string.Format(LocaleManager.Get("env_val_hum"), humidity);
+            string tempVal = string.Format(LocaleManager.Get("env_val_temp"), tempC, tempF);
+
+            // 绘制
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY, 400, 25), LocaleManager.Get("env_title"), atmosColor, titleStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 1, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_loc"), PluginsCore._cachedLocationName), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 2, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_gps"), latVal, lonVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 3, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_time"), tarkovTimeStr, realTimeStr), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 4, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_wind_dir"), windDirVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 5, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_cross"), crossVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 6, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_vect"), vectVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 7, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_alt"), altVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 8, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_press"), pressVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 9, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_hum"), humVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 10, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_temp"), tempVal), atmosColor, textStyle);
         }
     }
 }

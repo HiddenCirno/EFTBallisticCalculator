@@ -52,49 +52,58 @@ namespace EFTBallisticCalculator.HUD
             float vertAngle = PluginsCore.GetAzimuth().eulerAngles.x;
             if (vertAngle > 180f) vertAngle -= 360f;
 
-            string rangeStr = "---";
-            if (hasWeapon) rangeStr = hasLockedDistance ? $"{PluginsCore._lockedHorizontalDist:F1} M  (3D: {dist3D:F1} M)" : "NO LOCK";
+            string nodata = LocaleManager.Get("no_data");
 
-            string tofStr = isFcsLocked ? $"{PluginsCore._lockedTOF:F3} SEC" : "---";
-            string inclineStr = hasWeapon ? $"{vertAngle:-0.0;+0.0;0.0}°" : "---";
-            string cantStr = hasWeapon ? $"{rollAngle:+0.0;-0.0;0.0}°" : "---";
-            string speedStr = (hasWeapon && PluginsCore._hasAmmo) ? $"{PluginsCore._currentSpeed:F1} M/S" : "---";
-            string massStr = (hasWeapon && PluginsCore._hasAmmo) ? $"{PluginsCore._currentMass:F1} G" : "---";
-            string bcStr = (hasWeapon && PluginsCore._hasAmmo) ? $"{PluginsCore._currentBC:F3}" : "---";
+            // --- 1. 预处理变量值 (Value) ---
+            string headingVal = string.Format(LocaleManager.Get("fcs_val_heading"), PluginsCore.GetAzimuth().eulerAngles.y, compassHeading);
 
+            string rangeStr = nodata;
+            if (hasWeapon)
+            {
+                rangeStr = hasLockedDistance ? string.Format(LocaleManager.Get("fcs_val_range"), PluginsCore._lockedHorizontalDist) : LocaleManager.Get("fcs_no_lock");
+            }
+
+            string tofStr = isFcsLocked ? string.Format(LocaleManager.Get("fcs_val_tof"), PluginsCore._lockedTOF) : nodata;
+            string inclineStr = hasWeapon ? string.Format(LocaleManager.Get("fcs_val_angle"), vertAngle) : nodata;
+            string cantStr = hasWeapon ? string.Format(LocaleManager.Get("fcs_val_angle"), rollAngle) : nodata;
+            string speedStr = (hasWeapon && PluginsCore._hasAmmo) ? string.Format(LocaleManager.Get("fcs_val_speed"), PluginsCore._currentSpeed) : nodata;
+
+            string massVal = (hasWeapon && PluginsCore._hasAmmo) ? string.Format(LocaleManager.Get("fcs_val_mass"), PluginsCore._currentMass) : nodata;
+            string bcVal = (hasWeapon && PluginsCore._hasAmmo) ? string.Format(LocaleManager.Get("fcs_val_bc"), PluginsCore._currentBC) : "";
+            string massStr = string.IsNullOrEmpty(bcVal) ? massVal : $"{massVal} {bcVal}";
+
+            // 顶部状态栏
             string fcsStatusText;
-            if (!hasWeapon) fcsStatusText = "[ DIRECTOR FCS: NO WEAPON ]";
-            else if (!PluginsCore._hasAmmo) fcsStatusText = "[ DIRECTOR FCS: NO AMMO ]";
-            else if (hasLockedDistance) fcsStatusText = "[ DIRECTOR FCS: TARGET LOCKED ]";
-            else fcsStatusText = "[ DIRECTOR FCS: STANDBY ]";
+            if (!hasWeapon) fcsStatusText = LocaleManager.Get("fcs_title_no_weapon");
+            else if (!PluginsCore._hasAmmo) fcsStatusText = LocaleManager.Get("fcs_title_no_ammo");
+            else if (hasLockedDistance) fcsStatusText = LocaleManager.Get("fcs_title_locked");
+            else fcsStatusText = LocaleManager.Get("fcs_title_standby");
 
+            // --- 2. 注入标签模板并绘制 (Label) ---
             HUDManager.DrawShadowLabel(new Rect(finalX, finalY, 400, 25), $"<b>{fcsStatusText}</b>", mainColor, titleStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 1, rectWidth, lh), $"HEADING   : {PluginsCore.GetAzimuth().eulerAngles.y:000}° [{compassHeading}]", mainColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 2, rectWidth, lh), $"TGT RANGE : {rangeStr}", mainColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 3, rectWidth, lh), $"INCLINE   : {inclineStr}", mainColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 4, rectWidth, lh), $"CANT ANGL : {cantStr}", mainColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 5, rectWidth, lh), $"TIME FLGT : {tofStr}", mainColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 6, rectWidth, lh), $"MUZZLE VEL: {speedStr}", mainColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 7, rectWidth, lh), $"PROJ MASS : {massStr} {(hasWeapon ? $"(BC: {bcStr})" : "")}", mainColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 1, rectWidth, lh), string.Format(LocaleManager.Get("fcs_lbl_heading"), headingVal), mainColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 2, rectWidth, lh), string.Format(LocaleManager.Get("fcs_lbl_range"), rangeStr), mainColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 3, rectWidth, lh), string.Format(LocaleManager.Get("fcs_lbl_incline"), inclineStr), mainColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 4, rectWidth, lh), string.Format(LocaleManager.Get("fcs_lbl_cant"), cantStr), mainColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 5, rectWidth, lh), string.Format(LocaleManager.Get("fcs_lbl_tof"), tofStr), mainColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 6, rectWidth, lh), string.Format(LocaleManager.Get("fcs_lbl_vel"), speedStr), mainColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 7, rectWidth, lh), string.Format(LocaleManager.Get("fcs_lbl_mass"), massStr), mainColor, textStyle);
 
-            string aimStatus = "OFFLINE";
+            // 系统状态
+            string aimStatus = LocaleManager.Get("fcs_status_offline");
             string hexCode = "0x0000";
-
             if (hasWeapon)
             {
                 hexCode = "0x" + UnityEngine.Random.Range(0x1000, 0xFFFF).ToString("X4");
                 var pwa = PluginsCore.CorrectPlayer.ProceduralWeaponAnimation;
                 bool isAiming = (pwa != null && pwa.IsAiming);
 
-                if (!PluginsCore._hasAmmo) aimStatus = "NO_AMMO";
-                else if (!isAiming) aimStatus = "STANDBY";
-                else
-                {
-                    aimStatus = hasLockedDistance ? "TRACKED" : "OPTIC_SYNC";
-                }
+                if (!PluginsCore._hasAmmo) aimStatus = LocaleManager.Get("fcs_status_no_ammo");
+                else if (!isAiming) aimStatus = LocaleManager.Get("fcs_status_standby");
+                else aimStatus = hasLockedDistance ? LocaleManager.Get("fcs_status_tracked") : LocaleManager.Get("fcs_status_optic_sync");
             }
 
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 8f, rectWidth, lh), $"SYSTEM    : {aimStatus} | {hexCode}", mainColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 8f, rectWidth, lh), string.Format(LocaleManager.Get("fcs_lbl_sys"), aimStatus, hexCode), mainColor, textStyle);
 
             // 返回不包含子面板Y偏移的真实底部边界，方便排版叠加
             return startY + (lh * 10f);

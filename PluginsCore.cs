@@ -50,7 +50,8 @@ namespace EFTBallisticCalculator
         public void Awake()
         {
             Instance = this;
-
+            // 最先初始化语言管理器
+            LocaleManager.Init(Config);
             // 1. 下发配置给两大管家
             HotKeyManager.Init(Config);
             HUDManager.Init(Config);

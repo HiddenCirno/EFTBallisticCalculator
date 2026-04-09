@@ -79,6 +79,11 @@ namespace EFTBallisticCalculator.HUD
         public static string GetCompassDir(float az)
         {
             string[] dirs = { "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N" };
+            string[] dirsch = { "北", "北偏东", "东北", "东偏北", "东", "东偏南", "东南", "南偏东", "南", "南偏西", "西南", "西偏南", "西", "西偏北", "西北", "北偏西", "北" };
+            if (LocaleManager.CurrentLanguage.Value == AppLanguage.Chinese)
+            {
+                return dirsch[(int)Mathf.Round(((az % 360) / 22.5f))];
+            }
             return dirs[(int)Mathf.Round(((az % 360) / 22.5f))];
         }
     }
