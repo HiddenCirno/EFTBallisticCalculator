@@ -10,6 +10,11 @@ namespace EFTBallisticCalculator
         English,
         简体中文
     }
+    public enum CfgLanguage
+    {
+        English,
+        简体中文
+    }
 
     public static class LocaleManager
     {
@@ -156,7 +161,200 @@ namespace EFTBallisticCalculator
         public static void Init(ConfigFile config)
         {
             // 绑定 F12 设置项
-            CurrentLanguage = config.Bind("HUD Global", "Language / 语言", AppLanguage.English, "选择 HUD 的显示语言");
+            CurrentLanguage = config.Bind(
+                "Language / 语言", 
+                "HUD Language", 
+                AppLanguage.English,
+                new ConfigDescription(
+                        CfgLocaleManager.Get("cfg_lang_ui_desc"), // 翻译后的描述
+                        null, // 可接受的值范围 (AcceptableValues)，填 null 即可
+                        new ConfigurationManagerAttributes
+                            {
+                                DispName = CfgLocaleManager.Get("cfg_lang_ui_name") // 翻译后的显示名称！
+                            }
+                    )
+                );
+            }
+
+        // 核心获取方法：根据当前选择的语言返回文本
+        public static string Get(string key)
+        {
+            if (_translations.TryGetValue(CurrentLanguage.Value, out var langDict))
+            {
+                if (langDict.TryGetValue(key, out var text))
+                {
+                    return text;
+                }
+            }
+            // 防呆机制：如果字典里忘了写这个翻译，直接把 Key 打印出来，提醒你补上
+            return $"[{key}]";
+        }
+    }
+    public static class CfgLocaleManager
+    {
+        public static ConfigEntry<CfgLanguage> CurrentLanguage;
+
+        // 核心翻译字典：[语言类型 -> [Key -> 翻译文本]]
+        private static readonly Dictionary<CfgLanguage, Dictionary<string, string>> _translations = new Dictionary<CfgLanguage, Dictionary<string, string>>()
+        {
+            {
+                CfgLanguage.English, new Dictionary<string, string>
+                {
+                    // --- General ---
+                    { "cfg_lang_ui_name", "HUD Language" },
+                    { "cfg_lang_ui_desc", "Change HUD UI's display language." },
+
+                    // --- 1. Controls ---
+                    { "cfg_hotkey_fcs_name", "Toggle FCS HUD" },
+                    { "cfg_hotkey_fcs_desc", "Toggle the FCS panel display on/off." },
+                    { "cfg_hotkey_env_name", "Toggle Env HUD" },
+                    { "cfg_hotkey_env_desc", "Toggle the Environment panel display on/off." },
+                    { "cfg_hotkey_clear_name", "Clear Target (Unlock)" },
+                    { "cfg_hotkey_clear_desc", "Unlock the target and clear distance data." },
+
+                    // --- 2. Manual Dial ---
+                    { "cfg_dial_up_100_name", "Distance +100m" },
+                    { "cfg_dial_up_100_desc", "Manually increase locked distance by 100m." },
+                    { "cfg_dial_down_100_name", "Distance -100m" },
+                    { "cfg_dial_down_100_desc", "Manually decrease locked distance by 100m." },
+                    { "cfg_dial_up_10_name", "Distance +10m" },
+                    { "cfg_dial_up_10_desc", "Manually increase locked distance by 10m." },
+                    { "cfg_dial_down_10_name", "Distance -10m" },
+                    { "cfg_dial_down_10_desc", "Manually decrease locked distance by 10m." },
+                    { "cfg_dial_up_1_name", "Distance +1m" },
+                    { "cfg_dial_up_1_desc", "Manually increase locked distance by 1m." },
+                    { "cfg_dial_down_1_name", "Distance -1m" },
+                    { "cfg_dial_down_1_desc", "Manually decrease locked distance by 1m." },
+
+                    // --- Ballistics Calculator ---
+                    { "cfg_calc_scale_name", "Impact Marker Scale" },
+                    { "cfg_calc_scale_desc", "Determines the visual size of the 3D impact marker." },
+
+                    // --- Left HUD Pannel Global ---
+                    { "cfg_hud_x_name", "Global X Offset" },
+                    { "cfg_hud_x_desc", "Absolute distance of the entire HUD from the left side of the screen." },
+                    { "cfg_hud_y_name", "Global Y Offset" },
+                    { "cfg_hud_y_desc", "Y-axis offset of the entire HUD relative to the center of the screen." },
+                    { "cfg_hud_scale_name", "Global Scale" },
+                    { "cfg_hud_scale_desc", "Global UI scaling factor for all panels." },
+                    { "cfg_hud_space_name", "Panel Spacing" },
+                    { "cfg_hud_space_desc", "Vertical spacing between stacked panels." },
+                    { "cfg_hud_rb_ui_name", "Enable Rainbow UI" },
+                    { "cfg_hud_rb_ui_desc", "Make your HUD panels look cool like a rainbow!" },
+                    { "cfg_hud_rb_spd_name", "Rainbow UI Speed" },
+                    { "cfg_hud_rb_spd_desc", "Controls the color cycling speed of the Rainbow UI." },
+
+                    // --- FCS Panel ---
+                    { "cfg_fcs_x_name", "FCS X Offset" },
+                    { "cfg_fcs_x_desc", "Independent X-axis offset for the FCS panel." },
+                    { "cfg_fcs_y_name", "FCS Y Offset" },
+                    { "cfg_fcs_y_desc", "Independent Y-axis offset for the FCS panel." },
+                    { "cfg_fcs_scale_name", "FCS Scale" },
+                    { "cfg_fcs_scale_desc", "Independent scaling factor for the FCS panel." },
+                    { "cfg_fcs_active_name", "Show FCS Panel" },
+                    { "cfg_fcs_active_desc", "Enable or disable the FCS panel rendering." },
+                    { "cfg_fcs_color_name", "FCS Color" },
+                    { "cfg_fcs_color_desc", "Customize the UI color of the FCS panel." },
+
+                    // --- Environment Panel ---
+                    { "cfg_env_x_name", "Env X Offset" },
+                    { "cfg_env_x_desc", "Independent X-axis offset for the Environment panel." },
+                    { "cfg_env_y_name", "Env Y Offset" },
+                    { "cfg_env_y_desc", "Independent Y-axis offset for the Environment panel." },
+                    { "cfg_env_scale_name", "Env Scale" },
+                    { "cfg_env_scale_desc", "Independent scaling factor for the Environment panel." },
+                    { "cfg_env_active_name", "Show Env Panel" },
+                    { "cfg_env_active_desc", "Enable or disable the Environment panel rendering." },
+                    { "cfg_env_color_name", "Env Color" },
+                    { "cfg_env_color_desc", "Customize the UI color of the Environment panel." }
+                }
+            },
+            {
+                CfgLanguage.简体中文, new Dictionary<string, string>
+                {
+                    // --- General ---
+                    { "cfg_lang_cfg_name", "配置菜单语言" },
+                    { "cfg_lang_cfg_desc", "更改 F12 配置菜单的显示语言（需要重启游戏生效）。" },
+                    { "cfg_lang_ui_name", "HUD 界面语言" },
+                    { "cfg_lang_ui_desc", "更改游戏内 HUD 界面的显示语言（即时生效）。" },
+
+                    // --- 1. Controls ---
+                    { "cfg_hotkey_fcs_name", "切换火控面板" },
+                    { "cfg_hotkey_fcs_desc", "开启/关闭左侧的火控计算机面板。" },
+                    { "cfg_hotkey_env_name", "切换环境面板" },
+                    { "cfg_hotkey_env_desc", "开启/关闭左侧的环境数据面板。" },
+                    { "cfg_hotkey_clear_name", "脱锁并清除数据" },
+                    { "cfg_hotkey_clear_desc", "强制解除锁定，并清空当前测距数据。" },
+
+                    // --- 2. Manual Dial ---
+                    { "cfg_dial_up_100_name", "距离 +100m" },
+                    { "cfg_dial_up_100_desc", "手动校准距离：增加 100 米目标距离。" },
+                    { "cfg_dial_down_100_name", "距离 -100m" },
+                    { "cfg_dial_down_100_desc", "手动校准距离：减少 100 米目标距离。" },
+                    { "cfg_dial_up_10_name", "距离 +10m" },
+                    { "cfg_dial_up_10_desc", "手动校准距离：增加 10 米目标距离。" },
+                    { "cfg_dial_down_10_name", "距离 -10m" },
+                    { "cfg_dial_down_10_desc", "手动校准距离：减少 10 米目标距离。" },
+                    { "cfg_dial_up_1_name", "距离 +1m" },
+                    { "cfg_dial_up_1_desc", "手动校准距离：增加 1 米目标距离。" },
+                    { "cfg_dial_down_1_name", "距离 -1m" },
+                    { "cfg_dial_down_1_desc", "手动校准距离：减少 1 米目标距离。" },
+
+                    // --- Ballistics Calculator ---
+                    { "cfg_calc_scale_name", "着弹点标记比例" },
+                    { "cfg_calc_scale_desc", "视锥等距算法参数：决定 3D 物理预测球的标记大小。" },
+
+                    // --- Left HUD Pannel Global ---
+                    { "cfg_hud_x_name", "全局 X 轴偏移" },
+                    { "cfg_hud_x_desc", "HUD 整体距离屏幕左侧的绝对像素距离。" },
+                    { "cfg_hud_y_name", "全局 Y 轴偏移" },
+                    { "cfg_hud_y_desc", "HUD 整体相对屏幕垂直中心的 Y 轴偏移量。" },
+                    { "cfg_hud_scale_name", "全局缩放比例" },
+                    { "cfg_hud_scale_desc", "左侧所有 HUD 模块的全局 UI 缩放乘数。" },
+                    { "cfg_hud_space_name", "面板垂直间距" },
+                    { "cfg_hud_space_desc", "各个 UI 模块上下堆叠时的垂直间隔空间。" },
+                    { "cfg_hud_rb_ui_name", "启用彩虹 UI" },
+                    { "cfg_hud_rb_ui_desc", "让你的UI面板变得非常Coooool~" },
+                    { "cfg_hud_rb_spd_name", "彩虹 UI 闪烁速度" },
+                    { "cfg_hud_rb_spd_desc", "控制彩虹霓虹灯色彩的平滑循环速度。" },
+
+                    // --- FCS Panel ---
+                    { "cfg_fcs_x_name", "火控面板 X 偏移" },
+                    { "cfg_fcs_x_desc", "火控面板独立的 X 轴横向偏移量。" },
+                    { "cfg_fcs_y_name", "火控面板 Y 偏移" },
+                    { "cfg_fcs_y_desc", "火控面板独立的 Y 轴纵向偏移量。" },
+                    { "cfg_fcs_scale_name", "火控面板缩放" },
+                    { "cfg_fcs_scale_desc", "火控面板独立的 UI 缩放乘数。" },
+                    { "cfg_fcs_active_name", "显示火控面板" },
+                    { "cfg_fcs_active_desc", "是否在屏幕上渲染火控计算机系统数据。" },
+                    { "cfg_fcs_color_name", "火控面板颜色" },
+                    { "cfg_fcs_color_desc", "自定义火控计算机面板的静态基础颜色。" },
+
+                    // --- Environment Panel ---
+                    { "cfg_env_x_name", "环境面板 X 偏移" },
+                    { "cfg_env_x_desc", "环境数据面板独立的 X 轴横向偏移量。" },
+                    { "cfg_env_y_name", "环境面板 Y 偏移" },
+                    { "cfg_env_y_desc", "环境数据面板独立的 Y 轴纵向偏移量。" },
+                    { "cfg_env_scale_name", "环境面板缩放" },
+                    { "cfg_env_scale_desc", "环境数据面板独立的 UI 缩放乘数。" },
+                    { "cfg_env_active_name", "显示环境面板" },
+                    { "cfg_env_active_desc", "是否在屏幕上渲染环境数据。" },
+                    { "cfg_env_color_name", "环境面板颜色" },
+                    { "cfg_env_color_desc", "自定义环境数据面板的静态基础颜色。" }
+                }
+            }
+        };
+
+        // 供 PluginsCore.Awake() 调用
+        public static void Init(ConfigFile config)
+        {
+            // 绑定 F12 设置项
+            CurrentLanguage = config.Bind(
+                "Language / 语言",
+                "Menu Language / 配置菜单语言",
+                CfgLanguage.English,
+                "Change Configuration menu's language (Requires game restart). / 更改 F12 配置菜单的显示语言（需要重启游戏生效）。"
+                );
         }
 
         // 核心获取方法：根据当前选择的语言返回文本
@@ -172,5 +370,16 @@ namespace EFTBallisticCalculator
             // 防呆机制：如果字典里忘了写这个翻译，直接把 Key 打印出来，提醒你补上
             return $"[{key}]";
         }
+    }
+    internal sealed class ConfigurationManagerAttributes
+    {
+        // 用于覆盖 F12 菜单中显示的配置项名称 (Key)
+        public string DispName;
+
+        // 甚至可以用来排序，数字越小越靠上
+        public int? Order;
+
+        // 如果设置为 true，这个设置项在高级设置里才显示
+        public bool? Advanced;
     }
 }

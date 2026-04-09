@@ -13,11 +13,25 @@ namespace EFTBallisticCalculator.HUD
 
         public static void InitCfg(ConfigFile config)
         {
-            OffsetX = config.Bind("FCS Panel", "X Offset", 0f, "火控面板独立 X 轴偏移");
-            OffsetY = config.Bind("FCS Panel", "Y Offset", 0f, "火控面板独立 Y 轴偏移");
-            Scale = config.Bind("FCS Panel", "Scale", 1.0f, "火控面板独立缩放比例");
-            Active = config.Bind("FCS Panel", "Active", true, "显示火控面板");
-            Color = config.Bind("FCS Panel", "Color", new Color(0.2f, 1f, 0.4f, 0.9f), "火控面板颜色");
+            OffsetX = config.Bind("FCS Panel / 火控数据", "X轴偏移", 0f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_fcs_x_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_x_name") }));
+
+            OffsetY = config.Bind("FCS Panel / 火控数据", "Y轴偏移", 0f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_fcs_y_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_y_name") }));
+
+            Scale = config.Bind("FCS Panel / 火控数据", "缩放比例", 1.0f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_fcs_scale_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_scale_name") }));
+
+            Active = config.Bind("FCS Panel / 火控数据", "显示面板", true,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_fcs_active_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_active_name") }));
+
+            Color = config.Bind("FCS Panel / 火控数据", "颜色设置", new Color(0.2f, 1f, 0.4f, 0.9f),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_fcs_color_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_color_name") }));
         }
 
         public static float Draw(float startX, float startY, float globalScale, bool hasWeapon)

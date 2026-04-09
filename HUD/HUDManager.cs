@@ -15,12 +15,29 @@ namespace EFTBallisticCalculator.HUD
 
         public static void InitCfg(ConfigFile config)
         {
-            GlobalOffsetX = config.Bind("Left HUD Pannel Global", "Global X Offset", 30f, "HUD 整体距离屏幕左侧绝对距离");
-            GlobalStartYOffset = config.Bind("Left HUD Pannel Global", "Global Y Offset", -180f, "HUD 整体相对屏幕中心的 Y 轴偏移");
-            GlobalScale = config.Bind("Left HUD Pannel Global", "Global Scale", 1.0f, "全局 UI 缩放比例");
-            PanelSpacing = config.Bind("Left HUD Pannel Global", "Panel Spacing", 15f, "面板之间的垂直间距");
-            RainbowUISpeed = config.Bind("Left HUD Pannel Global", "RainbowUISpeed", 0.25f, "彩虹UI闪烁速度");
-            RainbowUI = config.Bind("Left HUD Pannel Global", "RainbowUI", false, "让你的面板像彩虹一样酷炫!");
+            GlobalOffsetX = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "全局X轴偏移", 30f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_x_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_x_name") }));
+
+            GlobalStartYOffset = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "全局Y轴偏移", -180f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_y_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_y_name") }));
+
+            GlobalScale = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "全局缩放比例", 1.0f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_scale_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_scale_name") }));
+
+            PanelSpacing = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "面板间距", 15f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_space_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_space_name") }));
+
+            RainbowUI = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "彩虹UI", false,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_rb_ui_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_rb_ui_name") }));
+
+            RainbowUISpeed = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "彩虹UI滚动速度", 0.25f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_rb_spd_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_rb_spd_name") }));
 
             // 初始化子面板
             FCSPanel.InitCfg(config);

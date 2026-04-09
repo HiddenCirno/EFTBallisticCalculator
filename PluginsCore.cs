@@ -48,6 +48,7 @@ namespace EFTBallisticCalculator
         public void Awake()
         {
             // 最先初始化语言管理器
+            CfgLocaleManager.Init(Config);
             LocaleManager.Init(Config);
             // 1. 下发配置给两大管家
             HotKeyManager.Init(Config);

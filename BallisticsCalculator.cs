@@ -15,7 +15,9 @@ namespace EFTBallisticCalculator
         public static ConfigEntry<float> Scale;
         public static void InitCfg(ConfigFile config)
         {
-            Scale = config.Bind("HUD Pannel Global", "视锥等距算法比例参数", 0.015f, "决定着弹点的标记大小");
+            Scale = config.Bind("Global / 全局设置", "着弹点标记缩放", 0.015f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_calc_scale_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_calc_scale_name") }));
         }
         public static Vector3 SimulateToHorizontalDistance(
          Vector3 startPos, Vector3 vel, float mass, float diam, float bc, float targetH, out float timeOfFlight)

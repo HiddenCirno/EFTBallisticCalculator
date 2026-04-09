@@ -20,18 +20,43 @@ namespace EFTBallisticCalculator.Core
 
         public static void Init(ConfigFile config)
         {
-            KeyFcsPannel = config.Bind("1. Controls", "Toggle FCS HUD", new KeyboardShortcut(KeyCode.KeypadDivide), "开启/关闭火控面板");
-            KeyEnvPannel = config.Bind("1. Controls", "Toggle Env HUD", new KeyboardShortcut(KeyCode.KeypadPlus), "开启/关闭环境面板");
-            KeyFcsClear = config.Bind("1. Controls", "Clear Target (Unlock)", new KeyboardShortcut(KeyCode.Backspace), "脱锁并清除距离数据");
+            // --- 1. Controls ---
+            KeyFcsPannel = config.Bind("Controls / 控制", "显示火控数据", new KeyboardShortcut(KeyCode.KeypadDivide),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_fcs_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_fcs_name") }));
 
-            KeyDistUp100 = config.Bind("2. Manual Dial", "Distance +100m", new KeyboardShortcut(KeyCode.UpArrow, KeyCode.LeftShift), "手动增加距离 100m");
-            KeyDistDown100 = config.Bind("2. Manual Dial", "Distance -100m", new KeyboardShortcut(KeyCode.DownArrow, KeyCode.LeftShift), "手动减少距离 100m");
+            KeyEnvPannel = config.Bind("Controls / 控制", "显示环境数据", new KeyboardShortcut(KeyCode.KeypadPlus),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_env_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_env_name") }));
 
-            KeyDistUp10 = config.Bind("2. Manual Dial", "Distance +10m", new KeyboardShortcut(KeyCode.UpArrow, KeyCode.LeftAlt), "手动增加距离 10m");
-            KeyDistDown10 = config.Bind("2. Manual Dial", "Distance -10m", new KeyboardShortcut(KeyCode.DownArrow, KeyCode.LeftAlt), "手动减少距离 10m");
+            KeyFcsClear = config.Bind("Controls / 控制", "解除锁定", new KeyboardShortcut(KeyCode.Backspace),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_clear_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_clear_name") }));
 
-            KeyDistUp1 = config.Bind("2. Manual Dial", "Distance +1m", new KeyboardShortcut(KeyCode.UpArrow, KeyCode.LeftControl), "手动增加距离 1m");
-            KeyDistDown1 = config.Bind("2. Manual Dial", "Distance -1m", new KeyboardShortcut(KeyCode.DownArrow, KeyCode.LeftControl), "手动减少距离 1m");
+            // --- 2. Manual Dial ---
+            KeyDistUp100 = config.Bind("Controls / 控制", "距离+100米", new KeyboardShortcut(KeyCode.UpArrow, KeyCode.LeftShift),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_dial_up_100_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_dial_up_100_name") }));
+
+            KeyDistDown100 = config.Bind("Controls / 控制", "距离-100米", new KeyboardShortcut(KeyCode.DownArrow, KeyCode.LeftShift),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_dial_down_100_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_dial_down_100_name") }));
+
+            KeyDistUp10 = config.Bind("Controls / 控制", "距离+10米", new KeyboardShortcut(KeyCode.UpArrow, KeyCode.LeftAlt),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_dial_up_10_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_dial_up_10_name") }));
+
+            KeyDistDown10 = config.Bind("Controls / 控制", "距离-10米", new KeyboardShortcut(KeyCode.DownArrow, KeyCode.LeftAlt),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_dial_down_10_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_dial_down_10_name") }));
+
+            KeyDistUp1 = config.Bind("Controls / 控制", "距离+1米", new KeyboardShortcut(KeyCode.UpArrow, KeyCode.LeftControl),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_dial_up_1_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_dial_up_1_name") }));
+
+            KeyDistDown1 = config.Bind("Controls / 控制", "距离-1米", new KeyboardShortcut(KeyCode.DownArrow, KeyCode.LeftControl),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_dial_down_1_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_dial_down_1_name") }));
         }
 
         // 返回当前帧玩家手动按键输入的距离增量

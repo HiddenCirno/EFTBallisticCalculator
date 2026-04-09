@@ -14,11 +14,25 @@ namespace EFTBallisticCalculator.HUD
 
         public static void InitCfg(ConfigFile config)
         {
-            OffsetX = config.Bind("Environment Panel", "X Offset", 0f, "环境面板独立 X 轴偏移");
-            OffsetY = config.Bind("Environment Panel", "Y Offset", 0f, "环境面板独立 Y 轴偏移");
-            Scale = config.Bind("Environment Panel", "Scale", 1.0f, "环境面板独立缩放比例");
-            Active = config.Bind("Environment Panel", "Active", true, "显示环境面板");
-            Color = config.Bind("Environment Panel", "Color", new Color(0.3f, 0.8f, 0.9f, 0.85f), "环境面板颜色");
+            OffsetX = config.Bind("Environment Panel / 环境数据", "X轴偏移", 0f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_env_x_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_x_name") }));
+
+            OffsetY = config.Bind("Environment Panel / 环境数据", "Y轴偏移", 0f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_env_y_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_y_name") }));
+
+            Scale = config.Bind("Environment Panel / 环境数据", "缩放比例", 1.0f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_env_scale_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_scale_name") }));
+                
+            Active = config.Bind("Environment Panel / 环境数据", "显示面板", true,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_env_active_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_active_name") }));
+
+            Color = config.Bind("Environment Panel / 环境数据", "颜色设置", new Color(0.3f, 0.8f, 0.9f, 0.85f),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_env_color_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_color_name") }));
         }
 
         public static void Draw(float startX, float startY, float globalScale)
