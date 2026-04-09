@@ -10,6 +10,7 @@ namespace EFTBallisticCalculator.Core
         public static ConfigEntry<KeyboardShortcut> KeyFcsPannel;
         public static ConfigEntry<KeyboardShortcut> KeyEnvPannel;
         public static ConfigEntry<KeyboardShortcut> KeyFcsClear;
+        public static ConfigEntry<KeyboardShortcut> KeyFcsTrack;
 
         public static ConfigEntry<KeyboardShortcut> KeyDistUp100;
         public static ConfigEntry<KeyboardShortcut> KeyDistDown100;
@@ -30,6 +31,9 @@ namespace EFTBallisticCalculator.Core
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_env_name") }));
 
             KeyFcsClear = config.Bind("Controls / 控制", "解除锁定", new KeyboardShortcut(KeyCode.Backspace),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_clear_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_clear_name") }));
+            KeyFcsTrack = config.Bind("Controls / 控制", "锁定目标", new KeyboardShortcut(KeyCode.T),
                 new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_clear_desc"), null,
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_clear_name") }));
 
@@ -77,7 +81,7 @@ namespace EFTBallisticCalculator.Core
             if (KeyEnvPannel.Value.IsDown()) EnvPanel.Active.Value = !EnvPanel.Active.Value;
             if (KeyFcsPannel.Value.IsDown()) FCSPanel.Active.Value = !FCSPanel.Active.Value;
 
-            if (Input.GetKeyDown(KeyCode.T))
+            if (KeyFcsTrack.Value.IsDown())
             {
                 BallisticsCalculator.ExecuteFcsLogic();
             }
