@@ -16,15 +16,15 @@ namespace EFTBallisticCalculator.HUD
         {
             OffsetX = config.Bind("Environment Panel / 环境数据", "X轴偏移", 0f,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_env_x_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_x_name") }));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_x_name"), Advanced = true }));
 
             OffsetY = config.Bind("Environment Panel / 环境数据", "Y轴偏移", 0f,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_env_y_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_y_name") }));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_y_name"), Advanced = true }));
 
             Scale = config.Bind("Environment Panel / 环境数据", "缩放比例", 1.0f,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_env_scale_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_scale_name") }));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_scale_name"), Advanced = true }));
                 
             Active = config.Bind("Environment Panel / 环境数据", "显示面板", true,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_env_active_desc"), null,

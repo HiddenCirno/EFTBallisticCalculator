@@ -15,15 +15,15 @@ namespace EFTBallisticCalculator.HUD
         {
             OffsetX = config.Bind("FCS Panel / 火控数据", "X轴偏移", 0f,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_fcs_x_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_x_name") }));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_x_name"), Advanced = true }));
 
             OffsetY = config.Bind("FCS Panel / 火控数据", "Y轴偏移", 0f,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_fcs_y_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_y_name") }));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_y_name"), Advanced = true }));
 
             Scale = config.Bind("FCS Panel / 火控数据", "缩放比例", 1.0f,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_fcs_scale_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_scale_name") }));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_scale_name"), Advanced = true }));
 
             Active = config.Bind("FCS Panel / 火控数据", "显示面板", true,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_fcs_active_desc"), null,
