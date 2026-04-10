@@ -1,4 +1,5 @@
 ﻿using BepInEx.Configuration;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace EFTBallisticCalculator.HUD
@@ -21,6 +22,8 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> RainbowUISpeed;
         public static ConfigEntry<bool> RainbowUI;
         public static Color RainbowColor = new Color(1f, 1f, 1f, 0.85f);
+
+        private static readonly Regex _colorRegex = new Regex(@"<color[^>]*>|</color>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public static void InitCfg(ConfigFile config)
         {
@@ -144,13 +147,29 @@ namespace EFTBallisticCalculator.HUD
 
         public static void DrawShadowLabel(Rect rect, string text, Color textColor, GUIStyle style)
         {
+            string shadowText = text;
+
+            // 2. 性能极致优化的拦截器：
+            // 只有当字符串真的包含 "<color" 或 "</color>" 时，才执行正则替换。
+            // StringComparison.OrdinalIgnoreCase 是内存分配为 0 的超快匹配方式。
+            if (!string.IsNullOrEmpty(text) &&
+               (text.IndexOf("<color", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                text.IndexOf("</color", System.StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                // 只剥离颜色标签，保留 <b> 和 <i> 标签，让阴影的粗细和倾斜度完美贴合主文本！
+                shadowText = _colorRegex.Replace(text, string.Empty);
+            }
+
+            // 3. 绘制阴影（使用剥离了颜色标签的干净文本）
             GUI.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
             Rect shadowRect = new Rect(rect.x + 1.5f, rect.y + 1.5f, rect.width, rect.height);
-            GUI.Label(shadowRect, text, style);
+            GUI.Label(shadowRect, shadowText, style);
 
+            // 4. 绘制主文本（保留原生塔科夫带颜色的富文本标签）
             GUI.color = textColor;
             GUI.Label(rect, text, style);
         }
+    
 
         public static string GetCompassDir(float az)
         {
