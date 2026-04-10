@@ -30,11 +30,6 @@ namespace EFTBallisticCalculator.HUD
             public bool IsDebuff;
         }
 
-        // 预编译正则，常驻内存极其高效
-        private static readonly Regex _buffValueRegex = new Regex(@"^(.*?)\s*[\(（]([+-]?\d+(?:\.\d+)?)\s*([^\)）]*)[\)）]$", RegexOptions.Compiled);
-
-        // 静态复用容器，每帧只 Clear 不 new
-        private static readonly Dictionary<string, AggregatedBuff> _aggregatedDict = new Dictionary<string, AggregatedBuff>();
         private static readonly List<string> _activeBuffs = new List<string>();
         private static readonly List<string> _activeDebuffs = new List<string>();
 
@@ -184,106 +179,78 @@ namespace EFTBallisticCalculator.HUD
 
             // ==========================================
             // 区块 3.5：系统级状态 (Global Buffs & Debuffs)
+            // 完全复刻原版 EffectsPanel.method_0 的去重与渲染逻辑
             // ==========================================
             var globalEffects = healthCtrl.GetAllActiveEffects(EBodyPart.Head);
 
-            _aggregatedDict.Clear();
             _activeBuffs.Clear();
             _activeDebuffs.Clear();
 
             if (globalEffects != null)
             {
+                // 1. 原版 UI 聚合算法 (精准提取自你提供的源码)
+                List<GClass3056> deduplicatedVariations = new List<GClass3056>();
+
                 foreach (var effect in globalEffects)
                 {
-                    var variation = effect.DisplayableVariations?.FirstOrDefault();
-                    if (variation == null || variation.Buffs == null) continue;
+                    if (effect.DisplayableVariations == null) continue;
 
-                    // 遍历所有子 Buff (刺激素通常一针带有多个效果)
-                    foreach (var buffObj in variation.Buffs)
+                    foreach (var variation in effect.DisplayableVariations)
                     {
-                        string rawText = buffObj.Text ?? "";
-                        if (string.IsNullOrEmpty(rawText)) continue;
+                        GClass3056.EBuffType buffType = variation.BuffType;
 
-                        bool isStimulant = variation.BuffType == GClass3056.EBuffType.Stimulant;
-                        bool isPainkiller = rawText.Contains("Pain") || rawText.Contains("Analgesic");
-                        bool isDebuff = rawText.Contains("Tremor") || rawText.Contains("Toxication") || rawText.Contains("Dehydration") || rawText.Contains("Contusion");
-
-                        if (isStimulant || isPainkiller || isDebuff)
+                        // 原版堆叠过滤逻辑
+                        if (buffType != GClass3056.EBuffType.Stackable)
                         {
-                            string localizedText = rawText.Localized();
-                            string baseName = localizedText;
-                            float numericValue = 0f;
-                            string suffix = "";
-                            bool hasValue = false;
-
-                            // 极速旁路拦截：只有包含 '(' 的文本才动用正则拆解
-                            if (localizedText.IndexOf('(') >= 0 || localizedText.IndexOf('（') >= 0)
+                            // 兴奋剂去重
+                            if (buffType == GClass3056.EBuffType.Stimulant)
                             {
-                                Match match = _buffValueRegex.Match(localizedText);
-                                if (match.Success)
-                                {
-                                    baseName = match.Groups[1].Value.Trim();
-                                    // 使用 InvariantCulture 确保解析不会因地区逗号点号差异报错
-                                    if (float.TryParse(match.Groups[2].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out numericValue))
-                                    {
-                                        hasValue = true;
-                                        suffix = match.Groups[3].Value.Trim();
-                                    }
-                                }
-                            }
-
-                            float timeLeft = effect.TimeLeft;
-
-                            // 聚合处理
-                            if (_aggregatedDict.TryGetValue(baseName, out var existingBuff))
-                            {
-                                existingBuff.MaxTimeLeft = Mathf.Max(existingBuff.MaxTimeLeft, timeLeft);
-                                if (hasValue) existingBuff.ValueSum += numericValue;
-                            }
-                            else
-                            {
-                                _aggregatedDict[baseName] = new AggregatedBuff
-                                {
-                                    BaseName = baseName,
-                                    ValueSum = numericValue,
-                                    ValueSuffix = suffix,
-                                    HasValue = hasValue,
-                                    MaxTimeLeft = timeLeft,
-                                    IsDebuff = isDebuff
-                                };
+                                if (deduplicatedVariations.Any(x => x.Type == variation.Type)) continue;
                             }
                         }
+                        else
+                        {
+                            // 可堆叠状态（如止痛药、流血）：同类覆盖，保留时间长的！
+                            var existing = deduplicatedVariations.FirstOrDefault(x => x.Type == variation.Type);
+                            if (existing != null)
+                            {
+                                if (existing.TimeLeft > variation.TimeLeft) continue;
+                                deduplicatedVariations.Remove(existing);
+                            }
+                        }
+                        deduplicatedVariations.Add(variation);
+                    }
+                }
 
-                        // 非刺激素效果通常只读第一个，防止冗余
-                        if (!isStimulant) break;
+                // 2. 渲染转换
+                foreach (var variation in deduplicatedVariations)
+                {
+                    // 恢复你最初的正确写法：只取第一个 Text 作为显示名，拒绝遍历内部的技能修饰符
+                    string buffName = variation.Buffs?.FirstOrDefault()?.Text ?? "";
+                    if (string.IsNullOrEmpty(buffName)) continue;
+
+                    // 获取底层类的真实英文名称，用于精准分类，避免被中文翻译影响
+                    string internalTypeName = variation.Type.Name;
+
+                    bool isStimulant = variation.BuffType == GClass3056.EBuffType.Stimulant;
+                    bool isPainkiller = internalTypeName.Contains("Pain") || internalTypeName.Contains("Analgesic");
+                    bool isDebuff = internalTypeName.Contains("Tremor") || internalTypeName.Contains("Toxic") || internalTypeName.Contains("Dehydrat") || internalTypeName.Contains("Contusion");
+
+                    if (isStimulant || isPainkiller || isDebuff)
+                    {
+                        // 【致胜关键】：读取 variation 的 UI 时间，完美绕过 Mod Patch 对底层的 Infinity 污染！
+                        float timeLeft = variation.TimeLeft;
+
+                        string timeStr = (timeLeft > 0 && timeLeft < 36000f) ? $" ({timeLeft:F0}S)" : "";
+                        string formattedBuff = $"{buffName.Localized()} {timeStr}";
+
+                        if (isDebuff) _activeDebuffs.Add(formattedBuff);
+                        else _activeBuffs.Add(formattedBuff);
                     }
                 }
             }
 
-            // 重组格式化并处理 Infinity 异常时间
-            foreach (var kvp in _aggregatedDict)
-            {
-                var data = kvp.Value;
-
-                string valuePart = "";
-                if (data.HasValue)
-                {
-                    string sign = data.ValueSum > 0 ? "+" : "";
-                    string spaceAndSuffix = string.IsNullOrEmpty(data.ValueSuffix) ? "" : $" {data.ValueSuffix}";
-                    valuePart = $" ({sign}{data.ValueSum}{spaceAndSuffix})";
-                }
-
-                float time = data.MaxTimeLeft;
-                bool isInfinity = float.IsInfinity(time) || time > 36000f;
-                string timeStr = $" ({time:F0}S)";//(!isInfinity && time > 0) ? $" ({time:F0}S)" : "";
-
-                string finalStr = $"{data.BaseName}{valuePart}{timeStr}";
-
-                if (data.IsDebuff) _activeDebuffs.Add(finalStr);
-                else _activeBuffs.Add(finalStr);
-            }
-
-            // 独立坐标轴渲染 (绘制在左侧)
+            // 侧翼列独立渲染 (左侧悬浮)
             float buffPanelWidth = 150f * finalScale;
             float buffStartX = finalX - buffPanelWidth;
             float buffY = finalY;
