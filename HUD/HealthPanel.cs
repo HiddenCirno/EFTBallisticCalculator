@@ -2,8 +2,9 @@
 using EFT;
 using EFT.HealthSystem;
 using System;
-using System.Linq; // 塔科夫健康系统核心命名空间
+using System.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace EFTBallisticCalculator.HUD
@@ -15,6 +16,27 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> Scale;
         public static ConfigEntry<bool> Active;
         public static ConfigEntry<Color> Color;
+
+        // ==========================================
+        // 性能优化：静态预分配内存，避免 OnGUI 中产生 GC 垃圾
+        // ==========================================
+        private class AggregatedBuff
+        {
+            public string BaseName;
+            public float ValueSum;
+            public string ValueSuffix;
+            public bool HasValue;
+            public float MaxTimeLeft;
+            public bool IsDebuff;
+        }
+
+        // 预编译正则，常驻内存极其高效
+        private static readonly Regex _buffValueRegex = new Regex(@"^(.*?)\s*[\(（]([+-]?\d+(?:\.\d+)?)\s*([^\)）]*)[\)）]$", RegexOptions.Compiled);
+
+        // 静态复用容器，每帧只 Clear 不 new
+        private static readonly Dictionary<string, AggregatedBuff> _aggregatedDict = new Dictionary<string, AggregatedBuff>();
+        private static readonly List<string> _activeBuffs = new List<string>();
+        private static readonly List<string> _activeDebuffs = new List<string>();
 
         public static void InitCfg(ConfigFile config)
         {
@@ -104,35 +126,31 @@ namespace EFTBallisticCalculator.HUD
                 string partName = part.ToString().Localized();
                 string statusText = "";
 
-                // 核心突破：直接调用你找到的原生方法，获取该部位所有激活的负面/正面效果！
                 var activeEffects = healthCtrl.GetAllActiveEffects(part);
 
                 if (activeEffects != null)
                 {
                     foreach (var effect in activeEffects)
                     {
-                        // 塔科夫的 Effect 类名通常是 "Fracture", "HeavyBleeding", "LightBleeding"
-                        // 偶尔可能带后缀，保险起见我们 Replace 掉 "Effect" 字眼，然后直接扔给原生字典去翻译
                         var variation = effect.DisplayableVariations?.FirstOrDefault();
 
                         string effectName = (variation != null && variation.BuffType != GClass3056.EBuffType.Stimulant)
                             ? variation.Buffs?.FirstOrDefault()?.Text ?? ""
                             : "";
                         var notInBlackList = (
-                            effectName != "SevereMusclePain" && 
+                            effectName != "SevereMusclePain" &&
                             effectName != "MildMusclePain" &&
                             effectName != "OVERWEIGHT_EFFECT_OVERWEIGHT" &&
                             effectName != "OVERWEIGHT_EFFECT_HUGE_OVERWEIGHT" &&
                             effectName != "Exhaustion"
                             );
-                        if (!effectName.IsNullOrEmpty() && notInBlackList && part!=EBodyPart.Head && part!=EBodyPart.Chest)
+                        if (!effectName.IsNullOrEmpty() && notInBlackList && part != EBodyPart.Head && part != EBodyPart.Chest)
                         {
                             statusText += $"[{effectName}] ";//.Localized()
                         }
                     }
                 }
 
-                // 如果没有检测到任何特殊状态，给一个兜底显示
                 if (string.IsNullOrEmpty(statusText))
                 {
                     statusText = hp.Current <= 0 ? "[损毁]" : "[OK]";
@@ -152,77 +170,141 @@ namespace EFTBallisticCalculator.HUD
             float weight = physCtrl.IobserverToPlayerBridge_0.TotalWeight;
             float overWeight = physCtrl.BaseOverweightLimits.x;
             float maxWeight = physCtrl.BaseOverweightLimits.y;
-            float weightLimit = weight>= overWeight ? maxWeight : overWeight;
+            float weightLimit = weight >= overWeight ? maxWeight : overWeight;
 
-            // 简单判断状态
             string weightStatus = "[NORMAL]";
             if (weight >= overWeight) weightStatus = "[OVERWEIGHT]";
             if (weight >= maxWeight) weightStatus = "[CRITICAL]";
 
-            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"WEIGHT  : {weight:F2}/{weightLimit} {weightStatus}", mainColor, textStyle); currentY += lh;
+            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"WEIGHT  : {weight:F2}/{weightLimit:F0} {weightStatus}", mainColor, textStyle); currentY += lh;
 
-            // 手部（上肢）耐力与腿部（下肢）耐力
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"OXYGEN : {physCtrl.Oxygen.Current:F1}/{physCtrl.Oxygen.TotalCapacity.Value:F1} ({(physCtrl.Oxygen.Current / physCtrl.Oxygen.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"UPPER STM : {physCtrl.HandsStamina.Current:F1}/{physCtrl.HandsStamina.TotalCapacity.Value:F1} ({(physCtrl.HandsStamina.Current / physCtrl.HandsStamina.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"LOWER STM : {physCtrl.Stamina.Current:F1}/{physCtrl.Stamina.TotalCapacity.Value:F1} ({(physCtrl.Stamina.Current / physCtrl.Stamina.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
+
+            // ==========================================
+            // 区块 3.5：系统级状态 (Global Buffs & Debuffs)
+            // ==========================================
             var globalEffects = healthCtrl.GetAllActiveEffects(EBodyPart.Head);
 
-            // 1. 改为使用 List 来收集独立的状态条目
-            List<string> activeBuffs = new List<string>();
-            List<string> activeDebuffs = new List<string>();
+            _aggregatedDict.Clear();
+            _activeBuffs.Clear();
+            _activeDebuffs.Clear();
 
             if (globalEffects != null)
             {
                 foreach (var effect in globalEffects)
                 {
                     var variation = effect.DisplayableVariations?.FirstOrDefault();
-                    if (variation == null) continue;
+                    if (variation == null || variation.Buffs == null) continue;
 
-                    string buffName = variation.Buffs?.FirstOrDefault()?.Text ?? "";
-                    if (string.IsNullOrEmpty(buffName)) continue;
-
-                    bool isStimulant = variation.BuffType == GClass3056.EBuffType.Stimulant;
-                    bool isPainkiller = buffName.Contains("Pain") || buffName.Contains("Analgesic");
-                    bool isDebuff = buffName == "Tremor" || buffName == "Toxication" || buffName == "Dehydration" || buffName == "Contusion";
-
-                    if (isStimulant || isPainkiller || isDebuff)
+                    // 遍历所有子 Buff (刺激素通常一针带有多个效果)
+                    foreach (var buffObj in variation.Buffs)
                     {
-                        float timeLeft = effect.TimeLeft;
-                        // 改成更紧凑的垂直显示格式： 止痛药 (120S)
-                        string timeStr = $" ({timeLeft:F0}S)";
-                        string formattedBuff = $"{buffName.Localized()}{timeStr}";
+                        string rawText = buffObj.Text ?? "";
+                        if (string.IsNullOrEmpty(rawText)) continue;
 
-                        if (isDebuff) activeDebuffs.Add(formattedBuff);
-                        else activeBuffs.Add(formattedBuff);
+                        bool isStimulant = variation.BuffType == GClass3056.EBuffType.Stimulant;
+                        bool isPainkiller = rawText.Contains("Pain") || rawText.Contains("Analgesic");
+                        bool isDebuff = rawText.Contains("Tremor") || rawText.Contains("Toxication") || rawText.Contains("Dehydration") || rawText.Contains("Contusion");
+
+                        if (isStimulant || isPainkiller || isDebuff)
+                        {
+                            string localizedText = rawText.Localized();
+                            string baseName = localizedText;
+                            float numericValue = 0f;
+                            string suffix = "";
+                            bool hasValue = false;
+
+                            // 极速旁路拦截：只有包含 '(' 的文本才动用正则拆解
+                            if (localizedText.IndexOf('(') >= 0 || localizedText.IndexOf('（') >= 0)
+                            {
+                                Match match = _buffValueRegex.Match(localizedText);
+                                if (match.Success)
+                                {
+                                    baseName = match.Groups[1].Value.Trim();
+                                    // 使用 InvariantCulture 确保解析不会因地区逗号点号差异报错
+                                    if (float.TryParse(match.Groups[2].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out numericValue))
+                                    {
+                                        hasValue = true;
+                                        suffix = match.Groups[3].Value.Trim();
+                                    }
+                                }
+                            }
+
+                            float timeLeft = effect.TimeLeft;
+
+                            // 聚合处理
+                            if (_aggregatedDict.TryGetValue(baseName, out var existingBuff))
+                            {
+                                existingBuff.MaxTimeLeft = Mathf.Max(existingBuff.MaxTimeLeft, timeLeft);
+                                if (hasValue) existingBuff.ValueSum += numericValue;
+                            }
+                            else
+                            {
+                                _aggregatedDict[baseName] = new AggregatedBuff
+                                {
+                                    BaseName = baseName,
+                                    ValueSum = numericValue,
+                                    ValueSuffix = suffix,
+                                    HasValue = hasValue,
+                                    MaxTimeLeft = timeLeft,
+                                    IsDebuff = isDebuff
+                                };
+                            }
+                        }
+
+                        // 非刺激素效果通常只读第一个，防止冗余
+                        if (!isStimulant) break;
                     }
                 }
             }
 
-            // 2. 独立坐标轴渲染 (绘制在左侧)
-            // 假设留出 150 个像素的宽度给 Buff 栏
-            float buffPanelWidth = 150f * finalScale;
-            float buffStartX = finalX - buffPanelWidth; // 往左推移
-            float buffY = finalY; // 和健康面板的顶部对齐，独立向下延伸
+            // 重组格式化并处理 Infinity 异常时间
+            foreach (var kvp in _aggregatedDict)
+            {
+                var data = kvp.Value;
 
-            // 绘制增益 Buff 列表
-            if (activeBuffs.Count > 0)
+                string valuePart = "";
+                if (data.HasValue)
+                {
+                    string sign = data.ValueSum > 0 ? "+" : "";
+                    string spaceAndSuffix = string.IsNullOrEmpty(data.ValueSuffix) ? "" : $" {data.ValueSuffix}";
+                    valuePart = $" ({sign}{data.ValueSum}{spaceAndSuffix})";
+                }
+
+                float time = data.MaxTimeLeft;
+                bool isInfinity = float.IsInfinity(time) || time > 36000f;
+                string timeStr = $" ({time:F0}S)";//(!isInfinity && time > 0) ? $" ({time:F0}S)" : "";
+
+                string finalStr = $"{data.BaseName}{valuePart}{timeStr}";
+
+                if (data.IsDebuff) _activeDebuffs.Add(finalStr);
+                else _activeBuffs.Add(finalStr);
+            }
+
+            // 独立坐标轴渲染 (绘制在左侧)
+            float buffPanelWidth = 150f * finalScale;
+            float buffStartX = finalX - buffPanelWidth;
+            float buffY = finalY;
+
+            if (_activeBuffs.Count > 0)
             {
                 HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), "<b>[ ACTIVE ]</b>", mainColor, titleStyle);
                 buffY += lh;
-                foreach (var buff in activeBuffs)
+                foreach (var buff in _activeBuffs)
                 {
                     HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), buff, mainColor, textStyle);
                     buffY += lh;
                 }
-                buffY += 5f * finalScale; // 留点间距
+                buffY += 5f * finalScale;
             }
 
-            // 绘制减益 Debuff 列表
-            if (activeDebuffs.Count > 0)
+            if (_activeDebuffs.Count > 0)
             {
                 HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), "<b>[ WARNING ]</b>", UnityEngine.Color.red, titleStyle);
                 buffY += lh;
-                foreach (var debuff in activeDebuffs)
+                foreach (var debuff in _activeDebuffs)
                 {
                     HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), debuff, UnityEngine.Color.red, textStyle);
                     buffY += lh;
