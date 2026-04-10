@@ -1,10 +1,7 @@
 ﻿using BepInEx.Configuration;
 using EFT;
-using EFT.HealthSystem;
 using System;
 using System.Linq;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace EFTBallisticCalculator.HUD
@@ -16,22 +13,6 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> Scale;
         public static ConfigEntry<bool> Active;
         public static ConfigEntry<Color> Color;
-
-        // ==========================================
-        // 性能优化：静态预分配内存，避免 OnGUI 中产生 GC 垃圾
-        // ==========================================
-        private class AggregatedBuff
-        {
-            public string BaseName;
-            public float ValueSum;
-            public string ValueSuffix;
-            public bool HasValue;
-            public float MaxTimeLeft;
-            public bool IsDebuff;
-        }
-
-        private static readonly List<string> _activeBuffs = new List<string>();
-        private static readonly List<string> _activeDebuffs = new List<string>();
 
         public static void InitCfg(ConfigFile config)
         {
@@ -56,23 +37,26 @@ namespace EFTBallisticCalculator.HUD
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_health_color_name") }));
         }
 
-        public static float Draw(float startX, float startY, float globalScale)
+        // 返回占用后的最左侧 X 坐标 (现在它就是自身的 finalX - width)
+        public static float Draw(float anchorRightX, float startY, float globalScale)
         {
-            if (!Active.Value || PluginsCore.CorrectPlayer == null) return startY;
+            if (!Active.Value || PluginsCore.CorrectPlayer == null) return anchorRightX;
 
-            // 获取塔科夫健康和物理组件
             var healthCtrl = PluginsCore.CorrectPlayer.ActiveHealthController;
             var physCtrl = PluginsCore.CorrectPlayer.Physical;
-            if (healthCtrl == null || physCtrl == null) return startY;
+            if (healthCtrl == null || physCtrl == null) return anchorRightX;
 
             float finalScale = globalScale * Scale.Value;
-            float finalX = startX + OffsetX.Value;
-            float finalY = startY + OffsetY.Value;
 
             float lh = 20f * finalScale;
             int titleSize = (int)(15 * finalScale);
             int textSize = (int)(13 * finalScale);
             float rectWidth = 350f * finalScale;
+
+            // 动态向左推演：从右侧锚点减去自身宽度
+            float spacing = 15f * finalScale; // 面板间隙
+            float finalX = anchorRightX - rectWidth - spacing + OffsetX.Value;
+            float finalY = startY + OffsetY.Value;
 
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = titleSize };
             GUIStyle textStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = textSize };
@@ -80,23 +64,13 @@ namespace EFTBallisticCalculator.HUD
 
             float currentY = finalY;
 
-            // --- [ 标题 ] ---
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), "<b>[ BIOMETRIC SENSORS ACTIVE ]</b>", mainColor, titleStyle);
             currentY += lh;
 
-            // ==========================================
-            // 区块 1：基本生存指标 (Vitals)
-            // ==========================================
-            float totalHealth = 0f, totalMaxHealth = 0f;
-            foreach (EBodyPart part in Enum.GetValues(typeof(EBodyPart)))
-            {
-                if (part == EBodyPart.Common) continue;
-                var partData = healthCtrl.GetBodyPartHealth(part);
-                totalHealth += partData.Current;
-                totalMaxHealth += partData.Maximum;
-            }
+            // --- 区块 1：基本生存指标 ---
+            float totalHealth = healthCtrl.GetBodyPartHealth(EBodyPart.Common).Current;
+            float totalMaxHealth = healthCtrl.GetBodyPartHealth(EBodyPart.Common).Maximum;
 
-            // 水分与能量
             string hydStr = $"HYDRATN : {healthCtrl.Hydration.Current:F0}/{healthCtrl.Hydration.Maximum:F0} {healthCtrl.HydrationRate:+0.00;-0.00;0.00}/min";
             string engStr = $"ENERGY  : {healthCtrl.Energy.Current:F0}/{healthCtrl.Energy.Maximum:F0} {healthCtrl.EnergyRate:+0.00;-0.00;0.00}/min";
             string tempStr = $"TEMP    : {healthCtrl.Temperature.Current:F1} °C";
@@ -106,14 +80,11 @@ namespace EFTBallisticCalculator.HUD
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), engStr, mainColor, textStyle); currentY += lh;
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), tempStr, mainColor, textStyle); currentY += lh;
 
-            currentY += 5f * finalScale; // 区块间距
+            currentY += 5f * finalScale;
 
-            // ==========================================
-            // 区块 2：肢体诊断 (Limb Diagnostics) & 原生状态
-            // ==========================================
+            // --- 区块 2：肢体诊断 ---
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), "<b>[ LIMB DIAGNOSTICS ]</b>", mainColor, titleStyle); currentY += lh;
 
-            // 遍历所有肢体部位
             EBodyPart[] partsToDraw = { EBodyPart.Head, EBodyPart.Chest, EBodyPart.Stomach, EBodyPart.LeftArm, EBodyPart.RightArm, EBodyPart.LeftLeg, EBodyPart.RightLeg };
             foreach (var part in partsToDraw)
             {
@@ -122,32 +93,22 @@ namespace EFTBallisticCalculator.HUD
                 string statusText = "";
 
                 var activeEffects = healthCtrl.GetAllActiveEffects(part);
-
                 if (activeEffects != null)
                 {
                     foreach (var effect in activeEffects)
                     {
                         var variation = effect.DisplayableVariations?.FirstOrDefault();
+                        string effectName = (variation != null && variation.BuffType != GClass3056.EBuffType.Stimulant) ? variation.Buffs?.FirstOrDefault()?.Text ?? "" : "";
 
-                        string effectName = (variation != null && variation.BuffType != GClass3056.EBuffType.Stimulant)
-                            ? variation.Buffs?.FirstOrDefault()?.Text ?? ""
-                            : "";
-                        var notInBlackList = (
-                            effectName != "SevereMusclePain" &&
-                            effectName != "MildMusclePain" &&
-                            effectName != "Exhaustion"
-                            );
-                        if (!effectName.IsNullOrEmpty() && notInBlackList && part != EBodyPart.Head && part != EBodyPart.Chest)
+                        var notInBlackList = (effectName != "SevereMusclePain" && effectName != "MildMusclePain" && effectName != "Exhaustion");
+                        if (!string.IsNullOrEmpty(effectName) && notInBlackList && part != EBodyPart.Head && part != EBodyPart.Chest)
                         {
-                            statusText += $"[{effectName}] ";//.Localized()
+                            statusText += $"[{effectName}] ";
                         }
                     }
                 }
 
-                if (string.IsNullOrEmpty(statusText))
-                {
-                    statusText = hp.Current <= 0 ? "[损毁]" : "[OK]";
-                }
+                if (string.IsNullOrEmpty(statusText)) statusText = hp.Current <= 0 ? "[损毁]" : "[OK]";
 
                 string line = $"{partName.PadRight(10)} : {hp.Current:F0}/{hp.Maximum:F0}  {statusText}";
                 HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), line, mainColor, textStyle); currentY += lh;
@@ -155,9 +116,7 @@ namespace EFTBallisticCalculator.HUD
 
             currentY += 5f * finalScale;
 
-            // ==========================================
-            // 区块 3：战斗与耐力 (Combat & Stamina)
-            // ==========================================
+            // --- 区块 3：战斗与耐力 ---
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), "<b>[ COMBAT & STAMINA ]</b>", mainColor, titleStyle); currentY += lh;
 
             float weight = physCtrl.IobserverToPlayerBridge_0.TotalWeight;
@@ -170,43 +129,11 @@ namespace EFTBallisticCalculator.HUD
             if (weight >= maxWeight) weightStatus = "[CRITICAL]";
 
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"WEIGHT  : {weight:F2}/{weightLimit:F0} {weightStatus}", mainColor, textStyle); currentY += lh;
-
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"OXYGEN : {physCtrl.Oxygen.Current:F1}/{physCtrl.Oxygen.TotalCapacity.Value:F1} ({(physCtrl.Oxygen.Current / physCtrl.Oxygen.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"UPPER STM : {physCtrl.HandsStamina.Current:F1}/{physCtrl.HandsStamina.TotalCapacity.Value:F1} ({(physCtrl.HandsStamina.Current / physCtrl.HandsStamina.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"LOWER STM : {physCtrl.Stamina.Current:F1}/{physCtrl.Stamina.TotalCapacity.Value:F1} ({(physCtrl.Stamina.Current / physCtrl.Stamina.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
 
-            var buffs = ActiveBuffManager.AllEffects;
-            float elapsedSinceScan = Time.time - ActiveBuffManager.LastUpdateTime;
-
-            float buffPanelWidth = 150f * finalScale;
-            float buffStartX = finalX - buffPanelWidth;
-            float buffY = finalY;
-
-            if (buffs.Count > 0)
-            {
-                HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), "<b>[ ACTIVE ]</b>", mainColor, titleStyle);
-                buffY += lh;
-                foreach (var buff in buffs)
-                {
-                    // 核心魔法：使用快照时间 减去 已经流逝的时间，实现逐帧平滑倒数！
-                    float displayTime = buff.TimeLeft;
-                    if (displayTime > 0)
-                    {
-                        displayTime = Mathf.Max(0f, displayTime - elapsedSinceScan);
-                    }
-
-                    string timeStr = displayTime > 0 ? $" ({displayTime:F0}s)" : "";
-                    string valueStr = buff.Strength != 0 ? $" {(buff.Strength > 0 ? "+" : "")}{buff.Strength:G3}" : "";
-                    string display = $"{buff.Name}{valueStr}{timeStr}";
-
-                    HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), display, mainColor, textStyle);
-                    buffY += lh;
-                }
-                buffY += 5f * finalScale;
-            }
-
-            // 返回真实高度
-            return currentY;
+            return finalX; // 返回占用后的最左侧坐标
         }
     }
 }

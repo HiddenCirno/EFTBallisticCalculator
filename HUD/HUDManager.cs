@@ -74,6 +74,7 @@ namespace EFTBallisticCalculator.HUD
             FCSPanel.InitCfg(config);
             EnvPanel.InitCfg(config);
             HealthPanel.InitCfg(config);
+            TeamPanel.InitCfg(config);
         }
 
         public static void UpdateRainbowColor()
@@ -108,11 +109,19 @@ namespace EFTBallisticCalculator.HUD
             // 2. 渲染右侧面板流 (Health & 队友状态)
             // ==========================================
             // 注意：因为是从左往右画，所以起点要用 Screen.width 减去配置的值（相当于预留出面板的宽度）
-            float rightStartX = Screen.width - RightGlobalOffsetX.Value;
+            // 初始化起点 (屏幕右边缘减去边距)
+            float rightAnchorX = Screen.width - RightGlobalOffsetX.Value;
             float rightCurrentY = (Screen.height / 2f) + RightGlobalStartYOffset.Value;
             float rightScale = RightGlobalScale.Value;
 
-            rightCurrentY = HealthPanel.Draw(rightStartX, rightCurrentY, rightScale);
+            // 1. 渲染健康面板 (最靠右)
+            rightAnchorX = HealthPanel.Draw(rightAnchorX, rightCurrentY, rightScale);
+
+            // 2. 渲染队伍面板 (贴在健康面板左侧)
+            rightAnchorX = TeamPanel.Draw(rightAnchorX, rightCurrentY, rightScale);
+
+            // 3. 渲染状态面板 (贴在队伍面板左侧，如果没有状态则不占空间)
+            rightAnchorX = ActiveBuffPanel.Draw(rightAnchorX, rightCurrentY, rightScale);
             // 未来这里还可以继续： rightCurrentY += RightPanelSpacing.Value * rightScale; TeamPanel.Draw(...)
 
             // ==========================================

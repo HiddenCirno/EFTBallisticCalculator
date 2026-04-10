@@ -39,6 +39,7 @@ namespace EFTBallisticCalculator
         public static int _layerMask = -1;
         public static Player CorrectPlayer { get; set; }
         public static GameWorld CorrectGameWorld { get; set; }
+        public static string CorrectGroupId { get; set; }
 
         public static EFT.Player.FirearmController _currentFC;
         public static Camera _cachedOpticCamera;

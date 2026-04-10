@@ -15,6 +15,7 @@ namespace EFTBallisticCalculator.Patch
         {
             PluginsCore.CorrectGameWorld = __instance;
             PluginsCore.CorrectPlayer = __instance.MainPlayer;
+            PluginsCore.CorrectGroupId = __instance.MainPlayer.Profile?.Info?.GroupId ?? "";
             PluginsCore._weatherSeedGlobal = Random.Range(0f, 100000f);
             PluginsCore._weatherRng = new System.Random((int)PluginsCore._weatherSeedGlobal);
 
