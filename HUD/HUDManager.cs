@@ -5,37 +5,65 @@ namespace EFTBallisticCalculator.HUD
 {
     public static class HUDManager
     {
+        // --- 左侧 HUD 全局设置 ---
         public static ConfigEntry<float> GlobalOffsetX;
         public static ConfigEntry<float> GlobalStartYOffset;
         public static ConfigEntry<float> GlobalScale;
         public static ConfigEntry<float> PanelSpacing;
+
+        // --- 右侧 HUD 全局设置 ---
+        public static ConfigEntry<float> RightGlobalOffsetX;
+        public static ConfigEntry<float> RightGlobalStartYOffset;
+        public static ConfigEntry<float> RightGlobalScale;
+        public static ConfigEntry<float> RightPanelSpacing;
+
+        // --- 其他全局特效 ---
         public static ConfigEntry<float> RainbowUISpeed;
         public static ConfigEntry<bool> RainbowUI;
         public static Color RainbowColor = new Color(1f, 1f, 1f, 0.85f);
 
         public static void InitCfg(ConfigFile config)
         {
+            // ==================== 左侧 HUD ====================
             GlobalOffsetX = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "全局X轴偏移", 30f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_x_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_x_name"), IsAdvanced = true }));
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_x_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_left_x_name"), IsAdvanced = true }));
 
             GlobalStartYOffset = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "全局Y轴偏移", -180f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_y_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_y_name"), IsAdvanced = true }));
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_y_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_left_y_name"), IsAdvanced = true }));
 
             GlobalScale = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "全局缩放比例", 1.0f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_scale_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_scale_name"), IsAdvanced = true }));
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_scale_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_left_scale_name"), IsAdvanced = true }));
 
             PanelSpacing = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "面板间距", 15f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_space_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_space_name"), IsAdvanced = true }));
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_space_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_left_space_name"), IsAdvanced = true }));
 
-            RainbowUI = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "彩虹UI", false,
+            // ==================== 右侧 HUD ====================
+            RightGlobalOffsetX = config.Bind("Right HUD Pannel Global / 右侧HUD全局设置", "全局X轴偏移", 280f, // 默认给380，因为要容纳面板宽度
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_x_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_right_x_name"), IsAdvanced = true }));
+
+            RightGlobalStartYOffset = config.Bind("Right HUD Pannel Global / 右侧HUD全局设置", "全局Y轴偏移", -180f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_y_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_right_y_name"), IsAdvanced = true }));
+
+            RightGlobalScale = config.Bind("Right HUD Pannel Global / 右侧HUD全局设置", "全局缩放比例", 1.0f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_scale_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_right_scale_name"), IsAdvanced = true }));
+
+            RightPanelSpacing = config.Bind("Right HUD Pannel Global / 右侧HUD全局设置", "面板间距", 15f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_space_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_right_space_name"), IsAdvanced = true }));
+
+            // ==================== 视觉特效 ====================
+            RainbowUI = config.Bind("HUD Visuals / 视觉特效", "彩虹UI", false,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_hud_rb_ui_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_rb_ui_name"), IsAdvanced = true }));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_rb_ui_name") }));
 
-            RainbowUISpeed = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "彩虹UI滚动速度", 0.25f,
+            RainbowUISpeed = config.Bind("HUD Visuals / 视觉特效", "彩虹UI滚动速度", 0.25f,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_hud_rb_spd_desc"), null,
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_rb_spd_name"), IsAdvanced = true }));
 
@@ -44,34 +72,49 @@ namespace EFTBallisticCalculator.HUD
             EnvPanel.InitCfg(config);
             HealthPanel.InitCfg(config);
         }
+
         public static void UpdateRainbowColor()
         {
             if (RainbowUI.Value)
             {
-                // Time.time * 0.25f 控制颜色变化的速度，Mathf.Repeat 保证色相在 0-1 之间循环
-                float hue = Mathf.Repeat(Time.time * 0.25f, 1f);
-                // 转换 HSV 到 RGB (饱和度 0.8，明度 1.0，保证颜色鲜艳不刺眼)
+                float hue = Mathf.Repeat(Time.time * RainbowUISpeed.Value, 1f); // 用上配置的速度
                 Color hsvColor = UnityEngine.Color.HSVToRGB(hue, 0.8f, 1f);
-                // 重新拼装 Color，保留 0.85 的透明度
                 RainbowColor = new Color(hsvColor.r, hsvColor.g, hsvColor.b, 0.85f);
             }
         }
+
         public static void DrawGUI()
         {
             if (Camera.main == null || PluginsCore.CorrectPlayer == null) return;
 
             bool hasWeapon = PluginsCore.CorrectPlayer.HandsController as EFT.Player.FirearmController != null;
-
-            float startX = GlobalOffsetX.Value;
-            float currentY = (Screen.height / 2f) + GlobalStartYOffset.Value;
-            float scale = GlobalScale.Value;
             UpdateRainbowColor();
-            // 绘制顺序流
-            currentY = FCSPanel.Draw(startX, currentY, scale, hasWeapon);
-            currentY += PanelSpacing.Value * scale;
-            EnvPanel.Draw(startX, currentY, scale);
-            HealthPanel.Draw(startX, currentY, scale);
-            // 中心锁定标记
+
+            // ==========================================
+            // 1. 渲染左侧面板流 (FCS + Env)
+            // ==========================================
+            float leftStartX = GlobalOffsetX.Value;
+            float leftCurrentY = (Screen.height / 2f) + GlobalStartYOffset.Value;
+            float leftScale = GlobalScale.Value;
+
+            leftCurrentY = FCSPanel.Draw(leftStartX, leftCurrentY, leftScale, hasWeapon);
+            leftCurrentY += PanelSpacing.Value * leftScale;
+            EnvPanel.Draw(leftStartX, leftCurrentY, leftScale);
+
+            // ==========================================
+            // 2. 渲染右侧面板流 (Health & 队友状态)
+            // ==========================================
+            // 注意：因为是从左往右画，所以起点要用 Screen.width 减去配置的值（相当于预留出面板的宽度）
+            float rightStartX = Screen.width - RightGlobalOffsetX.Value;
+            float rightCurrentY = (Screen.height / 2f) + RightGlobalStartYOffset.Value;
+            float rightScale = RightGlobalScale.Value;
+
+            rightCurrentY = HealthPanel.Draw(rightStartX, rightCurrentY, rightScale);
+            // 未来这里还可以继续： rightCurrentY += RightPanelSpacing.Value * rightScale; TeamPanel.Draw(...)
+
+            // ==========================================
+            // 3. 中心锁定标记
+            // ==========================================
             if (hasWeapon && PluginsCore._lockedHorizontalDist > 0f)
             {
                 DrawCenterMarker();
@@ -99,7 +142,6 @@ namespace EFTBallisticCalculator.HUD
             GUI.DrawTexture(new Rect(cx + size, cy + size - length, thick, length), Texture2D.whiteTexture);
         }
 
-        // 公共绘图工具
         public static void DrawShadowLabel(Rect rect, string text, Color textColor, GUIStyle style)
         {
             GUI.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
