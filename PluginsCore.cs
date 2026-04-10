@@ -73,6 +73,7 @@ namespace EFTBallisticCalculator
 
             // 3. 渲染物理预测球
             BallisticsCalculator.UpdateImpactMarker();
+            ActiveBuffManager.Update();
         }
 
         

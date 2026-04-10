@@ -177,103 +177,38 @@ namespace EFTBallisticCalculator.HUD
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"UPPER STM : {physCtrl.HandsStamina.Current:F1}/{physCtrl.HandsStamina.TotalCapacity.Value:F1} ({(physCtrl.HandsStamina.Current / physCtrl.HandsStamina.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"LOWER STM : {physCtrl.Stamina.Current:F1}/{physCtrl.Stamina.TotalCapacity.Value:F1} ({(physCtrl.Stamina.Current / physCtrl.Stamina.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
 
-            // ==========================================
-            // 区块 3.5：系统级状态 (Global Buffs & Debuffs)
-            // 完全复刻原版 EffectsPanel.method_0 的去重与渲染逻辑
-            // ==========================================
-            var globalEffects = healthCtrl.GetAllActiveEffects(EBodyPart.Head);
+            var buffs = ActiveBuffManager.PositiveEffects;
+            var debuffs = ActiveBuffManager.NegativeEffects;
 
-            _activeBuffs.Clear();
-            _activeDebuffs.Clear();
-
-            if (globalEffects != null)
-            {
-                // 1. 原版 UI 聚合算法 (精准提取自你提供的源码)
-                List<GClass3056> deduplicatedVariations = new List<GClass3056>();
-
-                foreach (var effect in globalEffects)
-                {
-                    if (effect.DisplayableVariations == null) continue;
-
-                    foreach (var variation in effect.DisplayableVariations)
-                    {
-                        GClass3056.EBuffType buffType = variation.BuffType;
-
-                        // 原版堆叠过滤逻辑
-                        if (buffType != GClass3056.EBuffType.Stackable)
-                        {
-                            // 兴奋剂去重
-                            if (buffType == GClass3056.EBuffType.Stimulant)
-                            {
-                                if (deduplicatedVariations.Any(x => x.Type == variation.Type)) continue;
-                            }
-                        }
-                        else
-                        {
-                            // 可堆叠状态（如止痛药、流血）：同类覆盖，保留时间长的！
-                            var existing = deduplicatedVariations.FirstOrDefault(x => x.Type == variation.Type);
-                            if (existing != null)
-                            {
-                                if (existing.TimeLeft > variation.TimeLeft) continue;
-                                deduplicatedVariations.Remove(existing);
-                            }
-                        }
-                        deduplicatedVariations.Add(variation);
-                    }
-                }
-
-                // 2. 渲染转换
-                foreach (var variation in deduplicatedVariations)
-                {
-                    // 恢复你最初的正确写法：只取第一个 Text 作为显示名，拒绝遍历内部的技能修饰符
-                    string buffName = variation.Buffs?.FirstOrDefault()?.Text ?? "";
-                    if (string.IsNullOrEmpty(buffName)) continue;
-
-                    // 获取底层类的真实英文名称，用于精准分类，避免被中文翻译影响
-                    string internalTypeName = variation.Type.Name;
-
-                    bool isStimulant = variation.BuffType == GClass3056.EBuffType.Stimulant;
-                    bool isPainkiller = internalTypeName.Contains("Pain") || internalTypeName.Contains("Analgesic");
-                    bool isDebuff = internalTypeName.Contains("Tremor") || internalTypeName.Contains("Toxic") || internalTypeName.Contains("Dehydrat") || internalTypeName.Contains("Contusion");
-
-                    if (isStimulant || isPainkiller || isDebuff)
-                    {
-                        // 【致胜关键】：读取 variation 的 UI 时间，完美绕过 Mod Patch 对底层的 Infinity 污染！
-                        float timeLeft = variation.TimeLeft;
-
-                        string timeStr = (timeLeft > 0 && timeLeft < 36000f) ? $" ({timeLeft:F0}S)" : "";
-                        string formattedBuff = $"{buffName.Localized()} {timeStr}";
-
-                        if (isDebuff) _activeDebuffs.Add(formattedBuff);
-                        else _activeBuffs.Add(formattedBuff);
-                    }
-                }
-            }
-
-            // 侧翼列独立渲染 (左侧悬浮)
             float buffPanelWidth = 150f * finalScale;
             float buffStartX = finalX - buffPanelWidth;
             float buffY = finalY;
 
-            if (_activeBuffs.Count > 0)
+            if (buffs.Count > 0)
             {
                 HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), "<b>[ ACTIVE ]</b>", mainColor, titleStyle);
                 buffY += lh;
-                foreach (var buff in _activeBuffs)
+                foreach (var buff in buffs)
                 {
-                    HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), buff, mainColor, textStyle);
+                    string timeStr = buff.TimeLeft > 0 ? $" ({buff.TimeLeft:F0}s)" : "";
+                    string valueStr = buff.Strength != 0 ? $" {(buff.Strength > 0 ? "+" : "")}{buff.Strength:G3}" : "";
+                    string display = $"{buff.Name}{valueStr}{timeStr}";
+                    HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), display, mainColor, textStyle);
                     buffY += lh;
                 }
                 buffY += 5f * finalScale;
             }
 
-            if (_activeDebuffs.Count > 0)
+            if (debuffs.Count > 0)
             {
                 HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), "<b>[ WARNING ]</b>", UnityEngine.Color.red, titleStyle);
                 buffY += lh;
-                foreach (var debuff in _activeDebuffs)
+                foreach (var debuff in debuffs)
                 {
-                    HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), debuff, UnityEngine.Color.red, textStyle);
+                    string timeStr = debuff.TimeLeft > 0 ? $" ({debuff.TimeLeft:F0}s)" : "";
+                    string valueStr = debuff.Strength != 0 ? $" {(debuff.Strength > 0 ? "+" : "")}{debuff.Strength:G3}" : "";
+                    string display = $"{debuff.Name}{valueStr}{timeStr}";
+                    HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), display, UnityEngine.Color.red, textStyle);
                     buffY += lh;
                 }
             }
