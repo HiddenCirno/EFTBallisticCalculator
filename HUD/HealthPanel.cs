@@ -177,8 +177,7 @@ namespace EFTBallisticCalculator.HUD
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"UPPER STM : {physCtrl.HandsStamina.Current:F1}/{physCtrl.HandsStamina.TotalCapacity.Value:F1} ({(physCtrl.HandsStamina.Current / physCtrl.HandsStamina.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"LOWER STM : {physCtrl.Stamina.Current:F1}/{physCtrl.Stamina.TotalCapacity.Value:F1} ({(physCtrl.Stamina.Current / physCtrl.Stamina.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
 
-            var buffs = ActiveBuffManager.PositiveEffects;
-            var debuffs = ActiveBuffManager.NegativeEffects;
+            var buffs = ActiveBuffManager.AllEffects;
 
             float buffPanelWidth = 150f * finalScale;
             float buffStartX = finalX - buffPanelWidth;
@@ -197,20 +196,6 @@ namespace EFTBallisticCalculator.HUD
                     buffY += lh;
                 }
                 buffY += 5f * finalScale;
-            }
-
-            if (debuffs.Count > 0)
-            {
-                HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), "<b>[ WARNING ]</b>", UnityEngine.Color.red, titleStyle);
-                buffY += lh;
-                foreach (var debuff in debuffs)
-                {
-                    string timeStr = debuff.TimeLeft > 0 ? $" ({debuff.TimeLeft:F0}s)" : "";
-                    string valueStr = debuff.Strength != 0 ? $" {(debuff.Strength > 0 ? "+" : "")}{debuff.Strength:G3}" : "";
-                    string display = $"{debuff.Name}{valueStr}{timeStr}";
-                    HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), display, UnityEngine.Color.red, textStyle);
-                    buffY += lh;
-                }
             }
 
             // 返回真实高度

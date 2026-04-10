@@ -14,6 +14,7 @@ namespace EFTBallisticCalculator.HUD
     /// <summary>
     /// 负责捕获、更新、合并所有玩家身上的 Buff/Debuff。
     /// 核心逻辑移植自 MedEffectsHUD，支持事件订阅 + 深度扫描 + 容器时间读取。
+    /// 修改：只保留一个 AllEffects 列表，不分正负面。
     /// </summary>
     public static class ActiveBuffManager
     {
@@ -22,15 +23,14 @@ namespace EFTBallisticCalculator.HUD
         // ------------------------------------------------------------
         public class DisplayEffect
         {
-            public string Name;           // 显示名称（本地化后）
+            public string Name;           // 显示名称
             public float TimeLeft;        // 剩余秒数，<=0 表示永久或未知
             public float Strength;        // 数值（如 +30 力量）
-            public bool IsDebuff;         // true=负面效果
             public string EffectId;       // 用于图标匹配的稳定标识符
         }
 
-        public static IReadOnlyList<DisplayEffect> PositiveEffects => _positiveEffects;
-        public static IReadOnlyList<DisplayEffect> NegativeEffects => _negativeEffects;
+        // 只保留一个列表，包含所有效果
+        public static IReadOnlyList<DisplayEffect> AllEffects => _allEffects;
 
         // ------------------------------------------------------------
         // 私有状态（移植自 MedEffectsHUD）
@@ -48,13 +48,11 @@ namespace EFTBallisticCalculator.HUD
         private static readonly List<object> _containers = new List<object>();
         private static readonly Dictionary<int, float> _buffWholeTimeOffset = new Dictionary<int, float>();
 
-        private static readonly List<DisplayEffect> _positiveEffects = new List<DisplayEffect>();
-        private static readonly List<DisplayEffect> _negativeEffects = new List<DisplayEffect>();
+        private static readonly List<DisplayEffect> _allEffects = new List<DisplayEffect>();
 
         private static float _lastUpdateTime;
         private const float UPDATE_INTERVAL = 0.5f;
         private static int _tick;
-
 
         // ------------------------------------------------------------
         // 初始化与更新
@@ -100,8 +98,7 @@ namespace EFTBallisticCalculator.HUD
             _healthController = null;
             _eventsSubscribed = false;
             _deepScanDone = false;
-            _positiveEffects.Clear();
-            _negativeEffects.Clear();
+            _allEffects.Clear();
             _capturedBuffs.Clear();
             _buffToContainer.Clear();
             _containerIds.Clear();
@@ -111,8 +108,7 @@ namespace EFTBallisticCalculator.HUD
 
         private static void RefreshEffects()
         {
-            _positiveEffects.Clear();
-            _negativeEffects.Clear();
+            _allEffects.Clear();
 
             if (_healthController == null) return;
             _tick++;
@@ -126,8 +122,7 @@ namespace EFTBallisticCalculator.HUD
 
             // 处理所有捕获到的 IPlayerBuff 对象
             var deadKeys = new List<string>();
-            var seenPos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var seenNeg = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var kv in _capturedBuffs)
             {
@@ -145,37 +140,29 @@ namespace EFTBallisticCalculator.HUD
                     float value = GetFloatProp(buff, "Value");
                     float timeLeft = SanitizeTimer(GetBuffTimeLeft(buff));
 
-                    // 判断正负面：颜色标签 > 数值正负 > 默认
-                    bool isDebuff = !IsPositiveEffect(buff.GetType());
-
                     string cleanName = StripColorTags(buffName);
                     string displayName = StripValueFromName(cleanName);
 
-                    string uniqueKey = $"{displayName}|{(isDebuff ? "N" : "P")}|{value:F2}";
+                    // 不再区分正负面，统一添加到 AllEffects
+                    string uniqueKey = $"{displayName}|{value:F2}";
                     var de = new DisplayEffect
                     {
                         Name = displayName,
                         TimeLeft = timeLeft,
                         Strength = value,
-                        IsDebuff = isDebuff,
                         EffectId = GetBuffEffectId(buff)
                     };
 
-                    var targetList = isDebuff ? _negativeEffects : _positiveEffects;
-                    var seenSet = isDebuff ? seenNeg : seenPos;
-                    AddDedup(targetList, seenSet, de, uniqueKey);
-                    //AddDedup(targetList, seenSet, de, displayName);
+                    AddDedup(_allEffects, seen, de, uniqueKey);
                 }
                 catch { }
             }
 
             foreach (var dk in deadKeys) _capturedBuffs.Remove(dk);
 
-            // 可选：排序（按剩余时间升序）
-            if (_positiveEffects.Count > 1)
-                _positiveEffects.Sort((a, b) => a.TimeLeft.CompareTo(b.TimeLeft));
-            if (_negativeEffects.Count > 1)
-                _negativeEffects.Sort((a, b) => a.TimeLeft.CompareTo(b.TimeLeft));
+            // 排序：按剩余时间升序（时间短的在上）
+            if (_allEffects.Count > 1)
+                _allEffects.Sort((a, b) => a.TimeLeft.CompareTo(b.TimeLeft));
         }
 
         // ------------------------------------------------------------
@@ -188,7 +175,6 @@ namespace EFTBallisticCalculator.HUD
             float elapsed = GetFloatProp(buff, "WholeTime");
             int bid = buff.GetHashCode();
 
-            // 1) 计算值 Duration - (WholeTime - offset)
             if (duration > 0 && elapsed >= 0)
             {
                 float offset = _buffWholeTimeOffset.TryGetValue(bid, out float off) ? off : 0f;
@@ -196,47 +182,18 @@ namespace EFTBallisticCalculator.HUD
                 if (remaining > 0 && remaining < 100000f) best = remaining;
             }
 
-            // 2) 容器 TimeLeft（最准确）
             if (_buffToContainer.TryGetValue(bid, out object container))
             {
                 float containerTL = GetFloatProp(container, "TimeLeft");
                 if (containerTL > 0 && containerTL < 100000f && containerTL > best) best = containerTL;
             }
 
-            // 3) 自身 TimeLeft
             float selfTL = GetFloatProp(buff, "TimeLeft");
             if (selfTL > 0 && selfTL < 100000f && selfTL > best) best = selfTL;
 
             return best;
         }
-        private static bool IsPositiveEffect(Type type)
-        {
-            string name = type.Name.ToLower();
-            string[] posExact = {
-        "painkiller","regeneration","healthregen","energyregen",
-        "hydrationregen","staminaregen","antidote","skillrate",
-        "maxstamina","weightlimit","damagereduction","berserk",
-        "bodytemperature","surgery","quantumtunnelling","endurance"
-    };
-            foreach (var kw in posExact)
-                if (name == kw)
-                    return true;
 
-            string[] negKw = {
-        "bleeding","heavybleeding","lightbleeding","fracture",
-        "contusion","intoxication","lethalintoxication",
-        "destruction","exhaustion","dehydration",
-        "tremor","tunnelvision","pain","flash","stun",
-        "disorientation","sidecontusion","musclepain",
-        "mildmusclepain","severemusclepain","radexposure",
-        "fatigue","chronicstaminafatigue"
-    };
-            foreach (var kw in negKw)
-                if (name.Contains(kw))
-                    return false;
-
-            return true;
-        }
         private static float GetSettingsDuration(object buff)
         {
             try
@@ -316,7 +273,6 @@ namespace EFTBallisticCalculator.HUD
                 string key = GetBuffKey(buff);
                 if (string.IsNullOrEmpty(key)) return;
 
-                // 移除同逻辑名的旧 buff（防止重复）
                 string buffName = GetStringProp(buff, "BuffName");
                 string bodyPart = GetStringProp(buff, "BodyPart");
                 var staleKeys = _capturedBuffs.Keys.Where(k => k.StartsWith($"{buffName}|{bodyPart}|")).ToList();
@@ -368,7 +324,6 @@ namespace EFTBallisticCalculator.HUD
             ResolveIPB();
             var visited = new HashSet<int>();
             DeepScan(_healthController, 0, 5, visited, "HC");
-            // 可选：扫描 GetAllEffects 中的隐藏 buff
             ScanEffectsForBuffs(visited);
         }
 
@@ -383,7 +338,6 @@ namespace EFTBallisticCalculator.HUD
                 var t = hcType;
                 while (t != null && t != typeof(object))
                 {
-                    // List_0 / Dictionary_1 等容器字段
                     var list0 = t.GetField("List_0", flags);
                     if (list0 != null && list0.GetValue(_healthController) is IList l0)
                         foreach (var c in l0) if (c != null) DeepScan(c, 0, 3, visited, "QS.L0");
@@ -395,7 +349,6 @@ namespace EFTBallisticCalculator.HUD
                     t = t.BaseType;
                 }
 
-                // 更新容器映射
                 RefreshContainerMappings();
             }
             catch { }
@@ -476,7 +429,7 @@ namespace EFTBallisticCalculator.HUD
                     if (buff != null)
                         _buffToContainer[buff.GetHashCode()] = obj;
 
-                return CaptureBuffFromScan(buffsList[0], path); // 实际应遍历，此处简化
+                return CaptureBuffFromScan(buffsList[0], path);
             }
             return 0;
         }
@@ -577,7 +530,6 @@ namespace EFTBallisticCalculator.HUD
 
         private static string GetBuffEffectId(object buff)
         {
-            // 简化：返回 BuffName 的清理版本
             string name = GetStringProp(buff, "BuffName");
             return StripColorTags(name)?.Replace(" ", "");
         }
@@ -609,21 +561,16 @@ namespace EFTBallisticCalculator.HUD
         private static float SanitizeTimer(float val) =>
             float.IsNaN(val) || float.IsInfinity(val) || val < -1f || val > 100000f ? -1f : val;
 
-
         private static void AddDedup(List<DisplayEffect> list, HashSet<string> seen, DisplayEffect de, string key)
         {
-            // 如果已经通过完全相同的 key 添加过，跳过
             if (seen.Contains(key)) return;
-
-            // 查找同名条目
             var existing = list.Find(e => e.Name == de.Name);
             if (existing != null)
             {
-                // 判断数值是否“显著不同”
+                // 判断数值是否显著不同
                 bool sameStrength = Math.Abs(existing.Strength - de.Strength) < 0.001f
                                  || (existing.Strength == 0f && de.Strength == 0f);
 
-                // 数值不同且都不是零 → 作为独立条目添加
                 if (!sameStrength && de.Strength != 0f && existing.Strength != 0f)
                 {
                     seen.Add(key);
@@ -631,7 +578,7 @@ namespace EFTBallisticCalculator.HUD
                     return;
                 }
 
-                // 数值相同（或一方为零）→ 合并，保留最长的剩余时间
+                // 数值相同或一方为零：合并，保留最长剩余时间
                 if (de.TimeLeft > 0 && (existing.TimeLeft <= 0 || de.TimeLeft > existing.TimeLeft))
                     existing.TimeLeft = de.TimeLeft;
                 if (de.Strength != 0f)
