@@ -43,7 +43,8 @@ namespace EFTBallisticCalculator.HUD
 
         private static readonly List<DisplayEffect> _allEffects = new List<DisplayEffect>();
 
-        private static float _lastUpdateTime;
+        private static float _lastUpdateTime; 
+        public static float LastUpdateTime => _lastUpdateTime;
         private const float UPDATE_INTERVAL = 0.5f;
         private static int _tick;
 

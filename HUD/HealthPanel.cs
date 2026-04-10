@@ -135,8 +135,6 @@ namespace EFTBallisticCalculator.HUD
                         var notInBlackList = (
                             effectName != "SevereMusclePain" &&
                             effectName != "MildMusclePain" &&
-                            effectName != "OVERWEIGHT_EFFECT_OVERWEIGHT" &&
-                            effectName != "OVERWEIGHT_EFFECT_HUGE_OVERWEIGHT" &&
                             effectName != "Exhaustion"
                             );
                         if (!effectName.IsNullOrEmpty() && notInBlackList && part != EBodyPart.Head && part != EBodyPart.Chest)
@@ -178,6 +176,7 @@ namespace EFTBallisticCalculator.HUD
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"LOWER STM : {physCtrl.Stamina.Current:F1}/{physCtrl.Stamina.TotalCapacity.Value:F1} ({(physCtrl.Stamina.Current / physCtrl.Stamina.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
 
             var buffs = ActiveBuffManager.AllEffects;
+            float elapsedSinceScan = Time.time - ActiveBuffManager.LastUpdateTime;
 
             float buffPanelWidth = 150f * finalScale;
             float buffStartX = finalX - buffPanelWidth;
@@ -189,9 +188,17 @@ namespace EFTBallisticCalculator.HUD
                 buffY += lh;
                 foreach (var buff in buffs)
                 {
-                    string timeStr = buff.TimeLeft > 0 ? $" ({buff.TimeLeft:F0}s)" : "";
+                    // 核心魔法：使用快照时间 减去 已经流逝的时间，实现逐帧平滑倒数！
+                    float displayTime = buff.TimeLeft;
+                    if (displayTime > 0)
+                    {
+                        displayTime = Mathf.Max(0f, displayTime - elapsedSinceScan);
+                    }
+
+                    string timeStr = displayTime > 0 ? $" ({displayTime:F0}s)" : "";
                     string valueStr = buff.Strength != 0 ? $" {(buff.Strength > 0 ? "+" : "")}{buff.Strength:G3}" : "";
                     string display = $"{buff.Name}{valueStr}{timeStr}";
+
                     HUDManager.DrawShadowLabel(new Rect(buffStartX, buffY, buffPanelWidth, lh), display, mainColor, textStyle);
                     buffY += lh;
                 }
