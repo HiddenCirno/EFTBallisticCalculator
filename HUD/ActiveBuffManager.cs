@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Comfort.Common;
 using EFT;
 using EFT.HealthSystem;
 using UnityEngine;
@@ -15,34 +14,28 @@ namespace EFTBallisticCalculator.HUD
     /// 负责捕获、更新、合并所有玩家身上的 Buff/Debuff。
     /// 核心逻辑移植自 MedEffectsHUD，支持事件订阅 + 深度扫描 + 容器时间读取。
     /// 修改：只保留一个 AllEffects 列表，不分正负面。
+    /// 依赖 PluginsCore.CorrectPlayer，无需自行查找。
     /// </summary>
     public static class ActiveBuffManager
     {
-        // ------------------------------------------------------------
-        // 对外输出数据
-        // ------------------------------------------------------------
         public class DisplayEffect
         {
-            public string Name;           // 显示名称
-            public float TimeLeft;        // 剩余秒数，<=0 表示永久或未知
-            public float Strength;        // 数值（如 +30 力量）
-            public string EffectId;       // 用于图标匹配的稳定标识符
+            public string Name;
+            public float TimeLeft;
+            public float Strength;
+            public string EffectId;
         }
 
-        // 只保留一个列表，包含所有效果
         public static IReadOnlyList<DisplayEffect> AllEffects => _allEffects;
 
-        // ------------------------------------------------------------
-        // 私有状态（移植自 MedEffectsHUD）
-        // ------------------------------------------------------------
         private static Player _localPlayer;
         private static IHealthController _healthController;
-        private static Type _ipbType;                     // IPlayerBuff 接口类型
+        private static Type _ipbType;
         private static bool _ipbSearched;
         private static bool _eventsSubscribed;
         private static bool _deepScanDone;
 
-        private static readonly Dictionary<string, object> _capturedBuffs = new Dictionary<string, object>(StringComparer.Ordinal);
+        private static readonly Dictionary<string, object> _capturedBuffs = new Dictionary<string, object>();
         private static readonly Dictionary<int, object> _buffToContainer = new Dictionary<int, object>();
         private static readonly HashSet<int> _containerIds = new HashSet<int>();
         private static readonly List<object> _containers = new List<object>();
@@ -54,9 +47,6 @@ namespace EFTBallisticCalculator.HUD
         private const float UPDATE_INTERVAL = 0.5f;
         private static int _tick;
 
-        // ------------------------------------------------------------
-        // 初始化与更新
-        // ------------------------------------------------------------
         public static void Update()
         {
             if (Time.time - _lastUpdateTime < UPDATE_INTERVAL) return;
@@ -69,27 +59,25 @@ namespace EFTBallisticCalculator.HUD
 
         private static void RefreshPlayerRef()
         {
-            try
+            var player = PluginsCore.CorrectPlayer;
+            if (player == null)
             {
-                if (_localPlayer != null && _localPlayer.HealthController != null) return;
-                if (!Singleton<GameWorld>.Instantiated) { Reset(); return; }
-                var gw = Singleton<GameWorld>.Instance;
-                if (gw == null) { Reset(); return; }
-                _localPlayer = gw.allAlivePlayersByID?.Values.FirstOrDefault(p => p.IsYourPlayer);
-                _healthController = _localPlayer?.HealthController;
-
-                if (_healthController != null)
-                {
-                    _eventsSubscribed = false;
-                    _deepScanDone = false;
-                    _capturedBuffs.Clear();
-                    _buffToContainer.Clear();
-                    _containerIds.Clear();
-                    _containers.Clear();
-                    _buffWholeTimeOffset.Clear();
-                }
+                Reset();
+                return;
             }
-            catch { Reset(); }
+
+            if (_localPlayer == player && _healthController == player.HealthController)
+                return;
+
+            _localPlayer = player;
+            _healthController = player.HealthController;
+            _eventsSubscribed = false;
+            _deepScanDone = false;
+            _capturedBuffs.Clear();
+            _buffToContainer.Clear();
+            _containerIds.Clear();
+            _containers.Clear();
+            _buffWholeTimeOffset.Clear();
         }
 
         private static void Reset()
@@ -109,18 +97,14 @@ namespace EFTBallisticCalculator.HUD
         private static void RefreshEffects()
         {
             _allEffects.Clear();
-
             if (_healthController == null) return;
+
             _tick++;
 
             if (!_eventsSubscribed) SubscribeEvents();
             if (!_deepScanDone) DeepScanHealthController();
+            if (_tick % 3 == 0) QuickRescan();
 
-            // 定期重新扫描容器映射（每 1.5 秒）
-            if (_tick % 3 == 0)
-                QuickRescan();
-
-            // 处理所有捕获到的 IPlayerBuff 对象
             var deadKeys = new List<string>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -130,9 +114,7 @@ namespace EFTBallisticCalculator.HUD
                 {
                     var buff = kv.Value;
                     if (buff == null) { deadKeys.Add(kv.Key); continue; }
-
-                    bool active = GetBoolProp(buff, "Active", true);
-                    if (!active) { deadKeys.Add(kv.Key); continue; }
+                    if (!GetBoolProp(buff, "Active", true)) { deadKeys.Add(kv.Key); continue; }
 
                     string buffName = GetStringProp(buff, "BuffName");
                     if (string.IsNullOrEmpty(buffName)) continue;
@@ -140,11 +122,9 @@ namespace EFTBallisticCalculator.HUD
                     float value = GetFloatProp(buff, "Value");
                     float timeLeft = SanitizeTimer(GetBuffTimeLeft(buff));
 
-                    string cleanName = StripColorTags(buffName);
-                    string displayName = StripValueFromName(cleanName);
-
-                    // 不再区分正负面，统一添加到 AllEffects
+                    string displayName = StripValueFromName(StripColorTags(buffName));
                     string uniqueKey = $"{displayName}|{value:F2}";
+
                     var de = new DisplayEffect
                     {
                         Name = displayName,
@@ -152,7 +132,6 @@ namespace EFTBallisticCalculator.HUD
                         Strength = value,
                         EffectId = GetBuffEffectId(buff)
                     };
-
                     AddDedup(_allEffects, seen, de, uniqueKey);
                 }
                 catch { }
@@ -160,14 +139,11 @@ namespace EFTBallisticCalculator.HUD
 
             foreach (var dk in deadKeys) _capturedBuffs.Remove(dk);
 
-            // 排序：按剩余时间升序（时间短的在上）
             if (_allEffects.Count > 1)
                 _allEffects.Sort((a, b) => a.TimeLeft.CompareTo(b.TimeLeft));
         }
 
-        // ------------------------------------------------------------
-        // 核心时间获取（取多个来源的最大值）
-        // ------------------------------------------------------------
+        // ---------- 时间获取 ----------
         private static float GetBuffTimeLeft(object buff)
         {
             float best = -1f;
@@ -207,9 +183,7 @@ namespace EFTBallisticCalculator.HUD
             catch { return -1f; }
         }
 
-        // ------------------------------------------------------------
-        // 事件订阅（反射注入 Action<IPlayerBuff>）
-        // ------------------------------------------------------------
+        // ---------- 事件订阅 ----------
         private static void SubscribeEvents()
         {
             if (_eventsSubscribed) return;
@@ -280,8 +254,7 @@ namespace EFTBallisticCalculator.HUD
 
                 _capturedBuffs[key] = buff;
                 int bid = buff.GetHashCode();
-                float wholeTime = GetFloatProp(buff, "WholeTime");
-                _buffWholeTimeOffset[bid] = wholeTime;
+                _buffWholeTimeOffset[bid] = GetFloatProp(buff, "WholeTime");
             }
             catch { }
         }
@@ -314,9 +287,7 @@ namespace EFTBallisticCalculator.HUD
             catch { return null; }
         }
 
-        // ------------------------------------------------------------
-        // 深度扫描（首次 + 定期快扫）
-        // ------------------------------------------------------------
+        // ---------- 深度扫描 ----------
         private static void DeepScanHealthController()
         {
             if (_deepScanDone) return;
@@ -339,16 +310,15 @@ namespace EFTBallisticCalculator.HUD
                 while (t != null && t != typeof(object))
                 {
                     var list0 = t.GetField("List_0", flags);
-                    if (list0 != null && list0.GetValue(_healthController) is IList l0)
+                    if (list0?.GetValue(_healthController) is IList l0)
                         foreach (var c in l0) if (c != null) DeepScan(c, 0, 3, visited, "QS.L0");
 
                     var dict1 = t.GetField("Dictionary_1", flags);
-                    if (dict1 != null && dict1.GetValue(_healthController) is IDictionary d1)
+                    if (dict1?.GetValue(_healthController) is IDictionary d1)
                         foreach (DictionaryEntry de in d1) if (de.Value != null) DeepScan(de.Value, 0, 3, visited, "QS.D1");
 
                     t = t.BaseType;
                 }
-
                 RefreshContainerMappings();
             }
             catch { }
@@ -454,9 +424,7 @@ namespace EFTBallisticCalculator.HUD
             }
         }
 
-        // ------------------------------------------------------------
-        // IPlayerBuff 识别
-        // ------------------------------------------------------------
+        // ---------- IPlayerBuff 识别 ----------
         private static void ResolveIPB()
         {
             if (_ipbSearched) return;
@@ -483,9 +451,7 @@ namespace EFTBallisticCalculator.HUD
                    type.GetProperty("Active") != null;
         }
 
-        // ------------------------------------------------------------
-        // 通用反射辅助
-        // ------------------------------------------------------------
+        // ---------- 反射辅助 ----------
         private static float GetFloatProp(object obj, string name)
         {
             try
@@ -534,9 +500,7 @@ namespace EFTBallisticCalculator.HUD
             return StripColorTags(name)?.Replace(" ", "");
         }
 
-        // ------------------------------------------------------------
-        // 字符串处理
-        // ------------------------------------------------------------
+        // ---------- 字符串处理 ----------
         private static string StripColorTags(string s)
         {
             if (string.IsNullOrEmpty(s)) return s;
@@ -567,18 +531,14 @@ namespace EFTBallisticCalculator.HUD
             var existing = list.Find(e => e.Name == de.Name);
             if (existing != null)
             {
-                // 判断数值是否显著不同
                 bool sameStrength = Math.Abs(existing.Strength - de.Strength) < 0.001f
                                  || (existing.Strength == 0f && de.Strength == 0f);
-
                 if (!sameStrength && de.Strength != 0f && existing.Strength != 0f)
                 {
                     seen.Add(key);
                     list.Add(de);
                     return;
                 }
-
-                // 数值相同或一方为零：合并，保留最长剩余时间
                 if (de.TimeLeft > 0 && (existing.TimeLeft <= 0 || de.TimeLeft > existing.TimeLeft))
                     existing.TimeLeft = de.TimeLeft;
                 if (de.Strength != 0f)
@@ -586,7 +546,6 @@ namespace EFTBallisticCalculator.HUD
                 seen.Add(key);
                 return;
             }
-
             seen.Add(key);
             list.Add(de);
         }
