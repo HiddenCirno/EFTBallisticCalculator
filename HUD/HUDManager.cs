@@ -67,7 +67,7 @@ namespace EFTBallisticCalculator.HUD
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_right_space_name"), IsAdvanced = true }));
 
             // ==================== 顶部 HUD ====================
-            TopGlobalOffsetY = config.Bind("Top HUD Pannel Global / 顶部HUD全局设置", "全局Y轴偏移", 90f,
+            TopGlobalOffsetY = config.Bind("Top HUD Pannel Global / 顶部HUD全局设置", "全局Y轴偏移", 85f,
                 new ConfigDescription("顶部面板距离屏幕边缘的初始距离", null,
                 new ConfigurationManagerAttributes { IsAdvanced = true }));
 
@@ -138,14 +138,16 @@ namespace EFTBallisticCalculator.HUD
             rightAnchorX = ActiveBuffPanel.Draw(rightAnchorX, rightCurrentY, rightScale);
 
             // ==========================================
-            // 3. 渲染顶部面板流 (Weapon -> Throwable) -> 垂直向下排布
+            // 3. 渲染顶部面板流 (Weapon -> Throwable)
             // ==========================================
             float topCurrentY = TopGlobalOffsetY.Value;
             float topScale = TopGlobalScale.Value;
 
-            topCurrentY = WeaponPanel.Draw(topCurrentY, topScale);
-            topCurrentY += TopPanelSpacing.Value * topScale;
-            topCurrentY = ThrowablePanel.Draw(topCurrentY, topScale);
+            // WeaponPanel 返回它的最左侧边界
+            float weaponLeftX = WeaponPanel.Draw(topCurrentY, topScale);
+
+            // 将 hasWeapon 状态和最左侧边界喂给 ThrowablePanel
+            ThrowablePanel.Draw(weaponLeftX, topCurrentY, topScale, hasWeapon);
 
             // ==========================================
             // 4. 中心锁定标记
