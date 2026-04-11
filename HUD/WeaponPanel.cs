@@ -13,6 +13,11 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<bool> Active;
         public static ConfigEntry<Color> Color;
 
+
+        public static ItemAttributeClass? recoilAttr;// = weapon.Attributes.FirstOrDefault(a => a.Id == EItemAttributeId.RecoilUp);
+        public static ItemAttributeClass? recoilbackAttr;// = weapon.Attributes.FirstOrDefault(a => a.Id == EItemAttributeId.Velocity);
+        public static ItemAttributeClass? moaAttr;// = weapon.Attributes.FirstOrDefault(a => a.Id == EItemAttributeId.Velocity);
+
         // 性能优化：静态复用 GUIContent，避免每帧 new 产生 GC Alloc
         private static readonly GUIContent _calcContent = new GUIContent();
 
@@ -32,7 +37,23 @@ namespace EFTBallisticCalculator.HUD
             var player = PluginsCore.CorrectPlayer;
             if (player.HandsController == null || !(player.HandsController.Item is Weapon weapon))
             {
+                recoilAttr = null;
+                recoilbackAttr = null;
+                moaAttr = null;
                 return Screen.width / 2f; // 没拿武器时，返回屏幕正中心作为锚点
+            }
+
+            if(recoilAttr == null)
+            {
+                recoilAttr = weapon.Attributes.FirstOrDefault(a => (EItemAttributeId)a.Id == EItemAttributeId.RecoilUp);
+            }
+            if (recoilbackAttr == null)
+            {
+                recoilbackAttr = weapon.Attributes.FirstOrDefault(a => (EItemAttributeId)a.Id == EItemAttributeId.RecoilBack);
+            }
+            if (moaAttr == null)
+            {
+                moaAttr = weapon.Attributes.FirstOrDefault(a => (EItemAttributeId)a.Id == EItemAttributeId.CenterOfImpact);
             }
 
             float finalScale = globalScale * Scale.Value;
@@ -58,10 +79,10 @@ namespace EFTBallisticCalculator.HUD
             float maxDur = weapon.Repairable?.MaxDurability ?? 100f;
             string durColor = (dur / maxDur) < 0.5f ? "#ff4444" : "#ffffff";
 
-            float moa = weapon.TotalAccuracy;
+            string moa = moaAttr.StringValue();
             float ergo = weapon.ErgonomicsTotal;
-            int recoilUp = (int)weapon.RecoilDelta;
-            int recoilBack = (int)weapon.RecoilForceBack;
+            float recoilUp = float.Parse(recoilAttr.StringValue());
+            float recoilBack = float.Parse(recoilbackAttr.StringValue());
 
             string chamberAmmoName = "EMPTY";
             string nextAmmoName = "EMPTY";
@@ -90,7 +111,7 @@ namespace EFTBallisticCalculator.HUD
             // 文本组装
             // ==========================================
             string nameLine = $"<b>[ {weaponName} ]</b>";
-            string statLine = $"DUR: <color={durColor}>{dur:F1}</color>  |  ERGO: {ergo:F1}  |  REC: {recoilUp}/{recoilBack}  |  MOA: {moa:F2}";
+            string statLine = $"DUR: <color={durColor}>{dur:F1}</color>  |  ERGO: {ergo:F1}  |  REC: {recoilUp:F0}/{recoilBack:F0}  |  MOA: {moa}";
 
             string chamberColor = chamberAmmoName == "EMPTY" ? "#ff4444" : "#55ff55";
             string magColor = currentMagCount == 0 ? "#ff4444" : (currentMagCount <= maxMagCount * 0.3f ? "#ffaa00" : "#ffffff");

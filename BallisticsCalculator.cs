@@ -11,7 +11,6 @@ namespace EFTBallisticCalculator
     public static class BallisticsCalculator
     {
         private static readonly Vector3 Gravity = Physics.gravity;
-
         public static ConfigEntry<float> Scale;
         public static void InitCfg(ConfigFile config)
         {
