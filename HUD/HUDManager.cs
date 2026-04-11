@@ -32,6 +32,7 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<Color> ShadowColor;
         public static ConfigEntry<float> ShadowOffsetX;
         public static ConfigEntry<float> ShadowOffsetY;
+        public static ConfigEntry<bool> PureMode;
 
         private static readonly Regex _colorRegex = new Regex(@"<color[^>]*>|</color>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -127,6 +128,10 @@ namespace EFTBallisticCalculator.HUD
                 new AcceptableValueRange<float>(-100f, 100f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_shdw_ofst_y_name"), IsAdvanced = true }));
 
+            PureMode = config.Bind("HUD Visuals / 视觉效果", "纯净模式", false,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_pure_ui_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_pure_ui_name"), IsAdvanced = true }));
+
             // ==================== 初始化子面板 ====================
             FCSPanel.InitCfg(config);
             EnvPanel.InitCfg(config);
@@ -220,21 +225,21 @@ namespace EFTBallisticCalculator.HUD
 
         public static void DrawShadowLabel(Rect rect, string text, Color textColor, GUIStyle style)
         {
-            string shadowText = text;
+            string pureText = text;
 
             if (!string.IsNullOrEmpty(text) &&
                (text.IndexOf("<color", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                 text.IndexOf("</color", System.StringComparison.OrdinalIgnoreCase) >= 0))
             {
-                shadowText = _colorRegex.Replace(text, string.Empty);
+                pureText = _colorRegex.Replace(text, string.Empty);
             }
 
             GUI.color = ShadowColor.Value;
             Rect shadowRect = new Rect(rect.x + ShadowOffsetX.Value, rect.y + ShadowOffsetY.Value, rect.width, rect.height);
-            GUI.Label(shadowRect, shadowText, style);
+            GUI.Label(shadowRect, pureText, style);
 
             GUI.color = textColor;
-            GUI.Label(rect, text, style);
+            GUI.Label(rect, PureMode.Value? pureText : text, style);
         }
 
         public static string GetCompassDir(float az)
