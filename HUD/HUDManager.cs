@@ -161,25 +161,53 @@ namespace EFTBallisticCalculator.HUD
             UpdateRainbowColor();
 
             // ==========================================
-            // 1. 渲染左侧面板流 (FCS + Env) -> 垂直向下排布
+            // 1. 渲染左侧面板流 (动态双列布局)
             // ==========================================
             float leftStartX = GlobalOffsetX.Value;
-            float leftCurrentY = (Screen.height / 2f) + GlobalStartYOffset.Value;
+            float leftStartY = (Screen.height / 2f) + GlobalStartYOffset.Value;
             float leftScale = GlobalScale.Value;
 
-            leftCurrentY = FCSPanel.Draw(leftStartX, leftCurrentY, leftScale, hasWeapon);
-            leftCurrentY += PanelSpacing.Value * leftScale;
-            EnvPanel.Draw(leftStartX, leftCurrentY, leftScale);
+            float columnSpacing = 350f * leftScale; // 两列之间的横向间距，可根据需要微调
+            float rowSpacing = PanelSpacing.Value * leftScale; // 上下间距
+
+            float currentX = leftStartX;
+            float currentY = leftStartY;
+            float nextRowY = leftStartY; // 记录下一行(即环境面板)应该挂在什么高度
+
+            // --- A. 尝试绘制 火控面板 (FCS) ---
+            float fcsBottomY = FCSPanel.Draw(currentX, currentY, leftScale, hasWeapon);
+            bool fcsDrawn = fcsBottomY > currentY; // 如果底部坐标变大了，说明画出来了
+            if (fcsDrawn)
+            {
+                // 环境面板要挂在火控下面
+                nextRowY = fcsBottomY + rowSpacing;
+            }
+
+            // --- B. 尝试绘制 队伍面板 (Team) ---
+            // 神奇的逻辑：如果 FCS 画了，Team 往右挪作第二列；如果 FCS 没画，Team 直接抢占第一列！
+            float teamStartX = fcsDrawn ? currentX + columnSpacing : currentX;
+            float teamBottomY = TeamPanel.Draw(teamStartX, currentY, leftScale);
+            bool teamDrawn = teamBottomY > currentY;
+
+            // 如果 FCS 没画，且 Team 画了，那么 Team 占据了一号位，环境面板必须挂在 Team 的下面！
+            if (!fcsDrawn && teamDrawn)
+            {
+                nextRowY = teamBottomY + rowSpacing;
+            }
+
+            // --- C. 绘制 环境面板 (Env) ---
+            // 环境面板永远当小弟，挂在在一号位的正下方（nextRowY）
+            EnvPanel.Draw(currentX, nextRowY, leftScale);
 
             // ==========================================
-            // 2. 渲染右侧面板流 (Health -> Team -> Buff) -> 横向向左排布
+            // 2. 渲染右侧面板流 (Health -> Buff)
             // ==========================================
             float rightAnchorX = Screen.width - RightGlobalOffsetX.Value;
             float rightCurrentY = (Screen.height / 2f) + RightGlobalStartYOffset.Value;
             float rightScale = RightGlobalScale.Value;
 
+            // 因为队伍面板挪走了，现在右侧只剩健康和 Buff
             rightAnchorX = HealthPanel.Draw(rightAnchorX, rightCurrentY, rightScale);
-            rightAnchorX = TeamPanel.Draw(rightAnchorX, rightCurrentY, rightScale);
             rightAnchorX = ActiveBuffPanel.Draw(rightAnchorX, rightCurrentY, rightScale);
 
             // ==========================================
@@ -188,10 +216,7 @@ namespace EFTBallisticCalculator.HUD
             float topCurrentY = TopGlobalOffsetY.Value;
             float topScale = TopGlobalScale.Value;
 
-            // WeaponPanel 返回它的最左侧边界
             float weaponLeftX = WeaponPanel.Draw(topCurrentY, topScale);
-
-            // 将 hasWeapon 状态和最左侧边界喂给 ThrowablePanel
             ThrowablePanel.Draw(weaponLeftX, topCurrentY, topScale, hasWeapon);
 
             // ==========================================

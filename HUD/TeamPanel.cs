@@ -128,13 +128,14 @@ namespace EFTBallisticCalculator.HUD
         }
 
         // 注意：这里的 anchorRightX 接收的是 HealthPanel 传出的最左侧边界
-        public static float Draw(float anchorRightX, float startY, float globalScale)
+        // 参数改为接收起点的 startX 和 startY
+        public static float Draw(float startX, float startY, float globalScale)
         {
+            // 如果没开启，或者没有队伍，直接原样返回 startY，高度无变化
             if (!Active.Value || PluginsCore.CorrectPlayer == null) return startY;
 
             UpdateRoster();
 
-            // 如果连你自己在内都没有队伍，直接不渲染
             if (string.IsNullOrEmpty(PluginsCore.CorrectGroupId) && _roster.Count == 0) return startY;
 
             float finalScale = globalScale * Scale.Value;
@@ -144,9 +145,8 @@ namespace EFTBallisticCalculator.HUD
             int textSize = (int)(13 * finalScale);
             float rectWidth = 320f * finalScale;
 
-            // 【动态对齐核心】：利用传进来的基准点，减去自身的宽度和间距，实现向右（贴靠左侧）自动对齐
-            float spacing = 15f * finalScale;
-            float finalX = anchorRightX - rectWidth - spacing + OffsetX.Value;
+            // 动态向左靠拢，直接从 startX 加上自身的独立偏移
+            float finalX = startX + OffsetX.Value;
             float finalY = startY + OffsetY.Value;
 
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = titleSize };
@@ -167,7 +167,8 @@ namespace EFTBallisticCalculator.HUD
                 DrawPlayerLine(record.Name, record.IsDead ? null : record.PlayerRef, false, finalX, ref currentY, rectWidth, lh, textStyle, mainColor);
             }
 
-            return finalX;
+            // 返回最终的底部 Y 坐标
+            return currentY; 
         }
 
         private static void DrawPlayerLine(string name, Player player, bool isSelf, float x, ref float y, float width, float lh, GUIStyle style, Color defaultColor)
