@@ -15,7 +15,8 @@ namespace EFTBallisticCalculator
         public static void InitCfg(ConfigFile config)
         {
             Scale = config.Bind("Global / 全局设置", "着弹点标记缩放", 0.015f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_calc_scale_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_calc_scale_desc"), 
+                new AcceptableValueRange<float>(0f, 3f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_calc_scale_name"), IsAdvanced = true }));
         }
         public static Vector3 SimulateToHorizontalDistance(
