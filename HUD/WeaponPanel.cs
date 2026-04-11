@@ -17,6 +17,7 @@ namespace EFTBallisticCalculator.HUD
         public static ItemAttributeClass? recoilAttr;// = weapon.Attributes.FirstOrDefault(a => a.Id == EItemAttributeId.RecoilUp);
         public static ItemAttributeClass? recoilbackAttr;// = weapon.Attributes.FirstOrDefault(a => a.Id == EItemAttributeId.Velocity);
         public static ItemAttributeClass? moaAttr;// = weapon.Attributes.FirstOrDefault(a => a.Id == EItemAttributeId.Velocity);
+        public static Weapon? weaponCache;
 
         // 性能优化：静态复用 GUIContent，避免每帧 new 产生 GC Alloc
         private static readonly GUIContent _calcContent = new GUIContent();
@@ -37,13 +38,25 @@ namespace EFTBallisticCalculator.HUD
             var player = PluginsCore.CorrectPlayer;
             if (player.HandsController == null || !(player.HandsController.Item is Weapon weapon))
             {
+                weaponCache = null;
                 recoilAttr = null;
                 recoilbackAttr = null;
                 moaAttr = null;
                 return Screen.width / 2f; // 没拿武器时，返回屏幕正中心作为锚点
             }
 
-            if(recoilAttr == null)
+            if (weaponCache != null && weaponCache != weapon)
+            {
+                weaponCache = null;
+                recoilAttr = null;
+                recoilbackAttr = null;
+                moaAttr = null;
+            }
+            if (weaponCache == null)
+            {
+                weaponCache = weapon;
+            }
+            if (recoilAttr == null)
             {
                 recoilAttr = weapon.Attributes.FirstOrDefault(a => (EItemAttributeId)a.Id == EItemAttributeId.RecoilUp);
             }
