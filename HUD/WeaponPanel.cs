@@ -24,16 +24,23 @@ namespace EFTBallisticCalculator.HUD
 
         public static void InitCfg(ConfigFile config)
         {
-            OffsetY = config.Bind("Top Panel / 武器火控", "武器板 Y轴偏移", 15f, 
-                new ConfigDescription("面板的纵向微调",
+            OffsetY = config.Bind("Top Panel / 武器数据", "Y轴偏移", 15f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_weap_y_desc"),
                 new AcceptableValueRange<float>(-1080f, 1080f),
-                new ConfigurationManagerAttributes { IsAdvanced = true }));
-            Scale = config.Bind("Top Panel / 武器火控", "武器板 缩放比例", 1.0f, 
-                new ConfigDescription("武器面板整体缩放",
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_weap_y_name"), IsAdvanced = true }));
+
+            Scale = config.Bind("Top Panel / 武器数据", "缩放比例", 1.0f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_weap_scale_desc"),
                 new AcceptableValueRange<float>(0f, 5f),
-                new ConfigurationManagerAttributes { IsAdvanced = true }));
-            Active = config.Bind("Top Panel / 武器火控", "显示武器面板", true, new ConfigDescription("是否启用武器火控显示"));
-            Color = config.Bind("Top Panel / 武器火控", "颜色设置", new Color(0.6f, 0.9f, 1f, 0.9f), new ConfigDescription("默认战术UI颜色"));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_weap_scale_name"), IsAdvanced = true }));
+
+            Active = config.Bind("Top Panel / 武器数据", "显示面板", true,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_weap_active_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_weap_active_name") }));
+
+            Color = config.Bind("Top Panel / 武器数据", "颜色设置", new Color(0.6f, 0.9f, 1f, 0.9f),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_weap_color_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_weap_color_name") }));
         }
 
         // 返回武器面板占用的【最左侧绝对 X 坐标】

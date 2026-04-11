@@ -186,8 +186,12 @@ namespace EFTBallisticCalculator
                     return text;
                 }
             }
+            if (_translations[AppLanguage.English].TryGetValue(key, out var fallbackText))
+            {
+                return fallbackText;
+            }
             // 防呆机制：如果字典里忘了写这个翻译，直接把 Key 打印出来，提醒你补上
-            return $"[{key}]";
+            return $"{key}";
         }
     }
     public static class CfgLocaleManager
@@ -287,7 +291,59 @@ namespace EFTBallisticCalculator
                     { "cfg_health_active_name", "Show Health Panel" },
                     { "cfg_health_active_desc", "Enable or disable the Biometric Health panel rendering." },
                     { "cfg_health_color_name", "Health Color" },
-                    { "cfg_health_color_desc", "Customize the UI color of the Health panel." }
+                    { "cfg_health_color_desc", "Customize the UI color of the Health panel." },
+                    // --- Active Buff Panel ---
+                    { "cfg_buff_x_name", "Buff X Offset" },
+                    { "cfg_buff_x_desc", "Independent X-axis offset for the Active Buff panel." },
+                    { "cfg_buff_y_name", "Buff Y Offset" },
+                    { "cfg_buff_y_desc", "Independent Y-axis offset for the Active Buff panel." },
+                    { "cfg_buff_scale_name", "Buff Scale" },
+                    { "cfg_buff_scale_desc", "Independent scaling factor for the Active Buff panel." },
+                    { "cfg_buff_active_name", "Show Buff Panel" },
+                    { "cfg_buff_active_desc", "Enable or disable the Active Buff panel rendering." },
+                    { "cfg_buff_color_name", "Buff Color" },
+                    { "cfg_buff_color_desc", "Customize the UI color of the Active Buff panel." },
+                    // --- Top HUD Global ---
+                    { "cfg_hud_top_y_name", "Global Y Offset" },
+                    { "cfg_hud_top_y_desc", "Initial distance of the top panels from the edge of the screen." },
+                    { "cfg_hud_top_scale_name", "Global Scale" },
+                    { "cfg_hud_top_scale_desc", "Global UI scaling factor for all top panels." },
+                    { "cfg_hud_top_space_name", "Panel Spacing" },
+                    { "cfg_hud_top_space_desc", "Vertical spacing between stacked top panels." },
+
+                    // --- Team Panel ---
+                    { "cfg_team_x_name", "Team X Offset" },
+                    { "cfg_team_x_desc", "Independent X-axis offset for the Team panel." },
+                    { "cfg_team_y_name", "Team Y Offset" },
+                    { "cfg_team_y_desc", "Independent Y-axis offset for the Team panel." },
+                    { "cfg_team_scale_name", "Team Scale" },
+                    { "cfg_team_scale_desc", "Independent scaling factor for the Team panel." },
+                    { "cfg_team_active_name", "Show Team Panel" },
+                    { "cfg_team_active_desc", "Enable or disable the squad biometric status display." },
+                    { "cfg_team_color_name", "Team Color" },
+                    { "cfg_team_color_desc", "Default text color for the Team panel." },
+
+                    // --- Throwable Panel ---
+                    { "cfg_throw_y_name", "Throwable Y Offset" },
+                    { "cfg_throw_y_desc", "Vertical fine-tuning offset for the Throwable panel." },
+                    { "cfg_throw_scale_name", "Throwable Scale" },
+                    { "cfg_throw_scale_desc", "Independent scaling factor for the Throwable panel." },
+                    { "cfg_throw_active_name", "Show Throwable Panel" },
+                    { "cfg_throw_active_desc", "Enable or disable the available ordnance display." },
+                    { "cfg_throw_align_name", "Text Alignment" },
+                    { "cfg_throw_align_desc", "Horizontal alignment of the text within the Throwable panel." },
+                    { "cfg_throw_color_name", "Throwable Color" },
+                    { "cfg_throw_color_desc", "Warning/Ordnance color for the Throwable panel." },
+
+                    // --- Weapon Panel ---
+                    { "cfg_weap_y_name", "Weapon Y Offset" },
+                    { "cfg_weap_y_desc", "Vertical fine-tuning offset for the Weapon panel." },
+                    { "cfg_weap_scale_name", "Weapon Scale" },
+                    { "cfg_weap_scale_desc", "Independent scaling factor for the Weapon panel." },
+                    { "cfg_weap_active_name", "Show Weapon Panel" },
+                    { "cfg_weap_active_desc", "Enable or disable the weapon fire-control display." },
+                    { "cfg_weap_color_name", "Weapon Color" },
+                    { "cfg_weap_color_desc", "Default tactical UI color for the Weapon panel." },
                 }
             },
             {
@@ -408,6 +464,10 @@ namespace EFTBallisticCalculator
                 {
                     return text;
                 }
+            }
+            if (_translations[CfgLanguage.English].TryGetValue(key, out var fallbackText))
+            {
+                return fallbackText;
             }
             // 防呆机制：如果字典里忘了写这个翻译，直接把 Key 打印出来，提醒你补上
             return key;

@@ -82,19 +82,19 @@ namespace EFTBallisticCalculator.HUD
 
             // ==================== 顶部 HUD ====================
             TopGlobalOffsetY = config.Bind("Top HUD Pannel Global / 顶部HUD全局设置", "全局Y轴偏移", 85f,
-                new ConfigDescription("顶部面板距离屏幕边缘的初始距离",
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_top_y_desc"),
                 new AcceptableValueRange<float>(-1080f, 1080f),
-                new ConfigurationManagerAttributes { IsAdvanced = true }));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_top_y_name"), IsAdvanced = true }));
 
             TopGlobalScale = config.Bind("Top HUD Pannel Global / 顶部HUD全局设置", "全局缩放比例", 1.0f,
-                new ConfigDescription("顶部所有面板的整体缩放比例",
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_top_scale_desc"),
                 new AcceptableValueRange<float>(0f, 5f),
-                new ConfigurationManagerAttributes { IsAdvanced = true }));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_top_scale_name"), IsAdvanced = true }));
 
             TopPanelSpacing = config.Bind("Top HUD Pannel Global / 顶部HUD全局设置", "面板间距", 5f,
-                new ConfigDescription("顶部各面板之间的垂直间距",
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_top_space_desc"),
                 new AcceptableValueRange<float>(-1080f, 1080f),
-                new ConfigurationManagerAttributes { IsAdvanced = true }));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_top_space_name"), IsAdvanced = true }));
 
             // ==================== 视觉特效 ====================
             RainbowUI = config.Bind("HUD Visuals / 视觉效果", "彩虹UI", false,
