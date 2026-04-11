@@ -17,15 +17,18 @@ namespace EFTBallisticCalculator.HUD
         public static void InitCfg(ConfigFile config)
         {
             OffsetX = config.Bind("Health Panel / 健康数据", "X轴偏移", 0f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_health_x_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_health_x_desc"),
+                new AcceptableValueRange<float>(-1920f, 1920f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_health_x_name"), IsAdvanced = true }));
 
             OffsetY = config.Bind("Health Panel / 健康数据", "Y轴偏移", 0f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_health_y_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_health_y_desc"),
+                new AcceptableValueRange<float>(-1080f, 1080f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_health_y_name"), IsAdvanced = true }));
 
             Scale = config.Bind("Health Panel / 健康数据", "缩放比例", 1.0f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_health_scale_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_health_scale_desc"),
+                new AcceptableValueRange<float>(0f, 5f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_health_scale_name"), IsAdvanced = true }));
 
             Active = config.Bind("Health Panel / 健康数据", "显示面板", true,

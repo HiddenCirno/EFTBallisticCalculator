@@ -15,15 +15,18 @@ namespace EFTBallisticCalculator.HUD
         public static void InitCfg(ConfigFile config)
         {
             OffsetX = config.Bind("Environment Panel / 环境数据", "X轴偏移", 0f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_env_x_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_env_x_desc"), 
+                new AcceptableValueRange<float>(-1920f, 1920f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_x_name"), IsAdvanced = true }));
 
             OffsetY = config.Bind("Environment Panel / 环境数据", "Y轴偏移", 0f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_env_y_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_env_y_desc"),
+                new AcceptableValueRange<float>(-1080f, 1080f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_y_name"), IsAdvanced = true }));
 
             Scale = config.Bind("Environment Panel / 环境数据", "缩放比例", 1.0f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_env_scale_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_env_scale_desc"),
+                new AcceptableValueRange<float>(0f, 5f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_scale_name"), IsAdvanced = true }));
                 
             Active = config.Bind("Environment Panel / 环境数据", "显示面板", true,

@@ -31,9 +31,18 @@ namespace EFTBallisticCalculator.HUD
 
         public static void InitCfg(ConfigFile config)
         {
-            OffsetX = config.Bind("Team Panel / 队伍数据", "X轴偏移", 0f, new ConfigDescription("队伍面板的横向偏移"));
-            OffsetY = config.Bind("Team Panel / 队伍数据", "Y轴偏移", 0f, new ConfigDescription("队伍面板的纵向偏移"));
-            Scale = config.Bind("Team Panel / 队伍数据", "缩放比例", 1.0f, new ConfigDescription("队伍面板整体缩放"));
+            OffsetX = config.Bind("Team Panel / 队伍数据", "X轴偏移", 0f, 
+                new ConfigDescription("队伍面板的横向偏移",
+                new AcceptableValueRange<float>(-1920f, 1920f),
+                new ConfigurationManagerAttributes { IsAdvanced = true }));
+            OffsetY = config.Bind("Team Panel / 队伍数据", "Y轴偏移", 0f, 
+                new ConfigDescription("队伍面板的纵向偏移",
+                new AcceptableValueRange<float>(-1080f, 1080f),
+                new ConfigurationManagerAttributes { IsAdvanced = true }));
+            Scale = config.Bind("Team Panel / 队伍数据", "缩放比例", 1.0f, 
+                new ConfigDescription("队伍面板整体缩放",
+                new AcceptableValueRange<float>(0f, 5f),
+                new ConfigurationManagerAttributes { IsAdvanced = true }));
             Active = config.Bind("Team Panel / 队伍数据", "显示面板", true, new ConfigDescription("是否启用队伍状态显示"));
             Color = config.Bind("Team Panel / 队伍数据", "颜色设置", new Color(0.8f, 0.9f, 1f, 0.85f), new ConfigDescription("默认文字颜色"));
         }

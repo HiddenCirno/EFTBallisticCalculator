@@ -27,8 +27,14 @@ namespace EFTBallisticCalculator.HUD
 
         public static void InitCfg(ConfigFile config)
         {
-            OffsetY = config.Bind("Top Panel / 投掷装备", "投掷板 Y轴偏移", 12f, new ConfigDescription("面板的纵向微调"));
-            Scale = config.Bind("Top Panel / 投掷装备", "投掷板 缩放比例", 1.25f, new ConfigDescription("面板整体缩放"));
+            OffsetY = config.Bind("Top Panel / 投掷装备", "投掷板 Y轴偏移", 12f, 
+                new ConfigDescription("面板的纵向微调",
+                new AcceptableValueRange<float>(-1080f, 1080f),
+                new ConfigurationManagerAttributes { IsAdvanced = true }));
+            Scale = config.Bind("Top Panel / 投掷装备", "投掷板 缩放比例", 1.25f, 
+                new ConfigDescription("面板整体缩放",
+                new AcceptableValueRange<float>(0f, 5f),
+                new ConfigurationManagerAttributes { IsAdvanced = true }));
             Active = config.Bind("Top Panel / 投掷装备", "显示投掷物", true, new ConfigDescription("是否启用可用投掷物显示"));
             Alignment = config.Bind("Top Panel / 投掷装备", "内部对齐方式", TextAlign.Center, new ConfigDescription("面板文字的对齐方式"));
             Color = config.Bind("Top Panel / 投掷装备", "颜色设置", new Color(0.9f, 0.7f, 0.2f, 0.85f), new ConfigDescription("警告/投掷物颜色"));

@@ -14,9 +14,9 @@ namespace EFTBallisticCalculator.HUD
 
         public static void InitCfg(ConfigFile config)
         {
-            OffsetX = config.Bind("Buff Panel / 状态数据", "X轴偏移", 0f, new ConfigDescription("面板横向偏移", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
-            OffsetY = config.Bind("Buff Panel / 状态数据", "Y轴偏移", 0f, new ConfigDescription("面板纵向偏移", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
-            Scale = config.Bind("Buff Panel / 状态数据", "缩放比例", 1.0f, new ConfigDescription("面板缩放比例", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
+            OffsetX = config.Bind("Buff Panel / 状态数据", "X轴偏移", 0f, new ConfigDescription("面板横向偏移", new AcceptableValueRange<float>(-1920f, 1920f), new ConfigurationManagerAttributes { IsAdvanced = true }));
+            OffsetY = config.Bind("Buff Panel / 状态数据", "Y轴偏移", 0f, new ConfigDescription("面板纵向偏移", new AcceptableValueRange<float>(-1080f, 1080f), new ConfigurationManagerAttributes { IsAdvanced = true }));
+            Scale = config.Bind("Buff Panel / 状态数据", "缩放比例", 1.0f, new ConfigDescription("面板缩放比例", new AcceptableValueRange<float>(0f, 5f), new ConfigurationManagerAttributes { IsAdvanced = true }));
             Active = config.Bind("Buff Panel / 状态数据", "显示面板", true, new ConfigDescription("是否启用状态面板"));
             Color = config.Bind("Buff Panel / 状态数据", "颜色设置", new Color(1f, 0.4f, 0.9f, 0.85f), new ConfigDescription("默认文字颜色"));
         }
