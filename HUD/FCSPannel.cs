@@ -9,6 +9,7 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> OffsetX;
         public static ConfigEntry<float> OffsetY;
         public static ConfigEntry<float> Scale;
+        public static ConfigEntry<float> RectWidth;
         public static ConfigEntry<bool> Active;
         public static ConfigEntry<Color> Color;
 
@@ -36,6 +37,11 @@ namespace EFTBallisticCalculator.HUD
             Color = config.Bind("FCS Panel / 火控数据", "颜色设置", new Color(0.2f, 1f, 0.4f, 0.9f),
                 new ConfigDescription(CfgLocaleManager.Get("cfg_fcs_color_desc"), null,
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_color_name") }));
+
+            RectWidth = config.Bind("FCS Panel / 火控数据", "面板宽度", 300f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_fcs_rect_desc"),
+                new AcceptableValueRange<float>(0f, 800f),
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_fcs_rect_name"), IsAdvanced = true }));
         }
 
         public static float Draw(float startX, float startY, float globalScale, bool hasWeapon)
@@ -48,7 +54,7 @@ namespace EFTBallisticCalculator.HUD
             float lh = 20f * finalScale;
             int titleSize = (int)(15 * finalScale);
             int textSize = (int)(13 * finalScale);
-            float rectWidth = 300f * finalScale;
+            float rectWidth = RectWidth.Value * finalScale;
 
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = titleSize };
             GUIStyle textStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = textSize };

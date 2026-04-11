@@ -12,6 +12,7 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> OffsetX;
         public static ConfigEntry<float> OffsetY;
         public static ConfigEntry<float> Scale;
+        public static ConfigEntry<float> RectWidth;
         public static ConfigEntry<bool> Active;
         public static ConfigEntry<Color> Color;
 
@@ -32,7 +33,7 @@ namespace EFTBallisticCalculator.HUD
 
         public static void InitCfg(ConfigFile config)
         {
-            OffsetX = config.Bind("Team Panel / 队伍数据", "X轴偏移", 0f,
+            OffsetX = config.Bind("Team Panel / 队伍数据", "X轴偏移", -50f,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_team_x_desc"),
                 new AcceptableValueRange<float>(-1920f, 1920f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_team_x_name"), IsAdvanced = true }));
@@ -54,6 +55,11 @@ namespace EFTBallisticCalculator.HUD
             Color = config.Bind("Team Panel / 队伍数据", "颜色设置", new Color(0.8f, 0.9f, 1f, 0.85f),
                 new ConfigDescription(CfgLocaleManager.Get("cfg_team_color_desc"), null,
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_team_color_name") }));
+
+            RectWidth = config.Bind("Team Panel / 队伍数据", "面板宽度", 340f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_team_rect_desc"),
+                new AcceptableValueRange<float>(0f, 800f),
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_team_rect_name"), IsAdvanced = true }));
         }
 
         // 维护队伍花名册 (每 2 秒扫描一次以节省性能)
@@ -143,7 +149,7 @@ namespace EFTBallisticCalculator.HUD
             float lh = 20f * finalScale;
             int titleSize = (int)(15 * finalScale);
             int textSize = (int)(13 * finalScale);
-            float rectWidth = 320f * finalScale;
+            float rectWidth = RectWidth.Value * finalScale;
 
             // 动态向左靠拢，直接从 startX 加上自身的独立偏移
             float finalX = startX + OffsetX.Value;

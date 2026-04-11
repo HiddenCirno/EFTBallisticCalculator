@@ -12,6 +12,7 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> OffsetX;
         public static ConfigEntry<float> OffsetY;
         public static ConfigEntry<float> Scale;
+        public static ConfigEntry<float> RectWidth;
         public static ConfigEntry<bool> Active;
         public static ConfigEntry<Color> Color;
 
@@ -39,6 +40,11 @@ namespace EFTBallisticCalculator.HUD
             Color = config.Bind("Health Panel / 健康数据", "颜色设置", new Color(1f, 0.7f, 0.8f, 0.85f),
                 new ConfigDescription(CfgLocaleManager.Get("cfg_health_color_desc"), null,
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_health_color_name") }));
+
+            RectWidth = config.Bind("Health Panel / 健康数据", "面板宽度", 300f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_health_rect_desc"),
+                new AcceptableValueRange<float>(0f, 800f),
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_health_rect_name"), IsAdvanced = true }));
         }
 
         // 返回占用后的最左侧 X 坐标 (现在它就是自身的 finalX - width)
@@ -55,7 +61,7 @@ namespace EFTBallisticCalculator.HUD
             float lh = 20f * finalScale;
             int titleSize = (int)(15 * finalScale);
             int textSize = (int)(13 * finalScale);
-            float rectWidth = 300f * finalScale;
+            float rectWidth = RectWidth.Value * finalScale;
 
             // 动态向左推演：从右侧锚点减去自身宽度
             float spacing = 0f * finalScale; // 面板间隙

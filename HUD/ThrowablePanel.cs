@@ -13,6 +13,7 @@ namespace EFTBallisticCalculator.HUD
 
         public static ConfigEntry<float> OffsetY;
         public static ConfigEntry<float> Scale;
+        public static ConfigEntry<float> RectWidth;
         public static ConfigEntry<bool> Active;
         public static ConfigEntry<TextAlign> Alignment;
         public static ConfigEntry<Color> Color;
@@ -49,6 +50,11 @@ namespace EFTBallisticCalculator.HUD
             Color = config.Bind("Top Panel / 投掷物数据", "颜色设置", new Color(0.9f, 0.7f, 0.2f, 0.85f),
                 new ConfigDescription(CfgLocaleManager.Get("cfg_throw_color_desc"), null,
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_throw_color_name") }));
+
+            RectWidth = config.Bind("Top Panel / 投掷物数据", "面板宽度", 180f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_throw_rect_desc"),
+                new AcceptableValueRange<float>(0f, 800f),
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_throw_rect_name"), IsAdvanced = true }));
         }
 
         private static void UpdateThrowables(Player player)
@@ -104,7 +110,7 @@ namespace EFTBallisticCalculator.HUD
             if (hasWeapon)
             {
                 // 持枪时：面板躲到左边，贴紧武器板，默认向右对齐
-                float panelWidth = 250f * finalScale;
+                float panelWidth = RectWidth.Value * finalScale;
                 float spacing = 25f * finalScale; // 距离武器板留点呼吸空间
 
                 anchor = Alignment.Value == TextAlign.Left ? TextAnchor.MiddleLeft :
