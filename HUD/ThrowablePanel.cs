@@ -107,7 +107,7 @@ namespace EFTBallisticCalculator.HUD
             }
 
             GUIStyle nadeStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = (int)(13 * finalScale), alignment = anchor };
-            UnityEngine.Color mainColor = Color.Value;
+            UnityEngine.Color mainColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : HUDManager.UIColorOverride.Value ? HUDManager.OverrideColor.Value : Color.Value;
 
             HUDManager.DrawShadowLabel(drawRect, "--- ORDNANCE ---", new UnityEngine.Color(0.5f, 0.5f, 0.5f, 0.5f), nadeStyle);
             currentY += lh;

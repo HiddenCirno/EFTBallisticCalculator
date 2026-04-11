@@ -49,7 +49,7 @@ namespace EFTBallisticCalculator.HUD
 
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = titleSize };
             GUIStyle textStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = textSize };
-            Color atmosColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : Color.Value;
+            Color atmosColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : HUDManager.UIColorOverride.Value ? HUDManager.OverrideColor.Value : Color.Value;
 
             string realTimeStr = DateTime.Now.ToString("HH:mm:ss");
             string tarkovTimeStr = "UNKNOWN";

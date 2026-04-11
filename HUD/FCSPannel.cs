@@ -48,7 +48,7 @@ namespace EFTBallisticCalculator.HUD
 
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = titleSize };
             GUIStyle textStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = textSize };
-            Color mainColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : Color.Value;
+            Color mainColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : HUDManager.UIColorOverride.Value ? HUDManager.OverrideColor.Value : Color.Value;
 
             var fc = PluginsCore.CorrectPlayer.HandsController as EFT.Player.FirearmController;
             Vector3 currentPos = hasWeapon ? fc.CurrentFireport.position : Camera.main.transform.position;

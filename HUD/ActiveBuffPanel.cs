@@ -42,7 +42,7 @@ namespace EFTBallisticCalculator.HUD
 
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = titleSize };
             GUIStyle textStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = textSize };
-            UnityEngine.Color mainColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : Color.Value;
+            UnityEngine.Color mainColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : HUDManager.UIColorOverride.Value ? HUDManager.OverrideColor.Value : Color.Value;
 
             float currentY = finalY;
 

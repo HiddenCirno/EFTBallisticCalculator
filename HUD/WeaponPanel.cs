@@ -80,7 +80,7 @@ namespace EFTBallisticCalculator.HUD
             GUIStyle nameStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = nameSize, alignment = TextAnchor.MiddleCenter };
             GUIStyle statStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = statSize, alignment = TextAnchor.MiddleCenter };
             GUIStyle ammoStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = ammoSize, alignment = TextAnchor.MiddleCenter };
-            UnityEngine.Color mainColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : Color.Value;
+            UnityEngine.Color mainColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : HUDManager.UIColorOverride.Value ? HUDManager.OverrideColor.Value : Color.Value;
 
             // ==========================================
             // 核心数据提取

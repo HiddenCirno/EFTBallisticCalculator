@@ -27,6 +27,11 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> RainbowUISpeed;
         public static ConfigEntry<bool> RainbowUI;
         public static Color RainbowColor = new Color(1f, 1f, 1f, 0.85f);
+        public static ConfigEntry<bool> UIColorOverride;
+        public static ConfigEntry<Color> OverrideColor;
+        public static ConfigEntry<Color> ShadowColor;
+        public static ConfigEntry<float> ShadowOffsetX;
+        public static ConfigEntry<float> ShadowOffsetY;
 
         private static readonly Regex _colorRegex = new Regex(@"<color[^>]*>|</color>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -34,59 +39,93 @@ namespace EFTBallisticCalculator.HUD
         {
             // ==================== 左侧 HUD ====================
             GlobalOffsetX = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "全局X轴偏移", 30f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_x_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_x_desc"),
+                new AcceptableValueRange<float>(-1920f, 1920f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_left_x_name"), IsAdvanced = true }));
 
             GlobalStartYOffset = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "全局Y轴偏移", -180f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_y_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_y_desc"),
+                new AcceptableValueRange<float>(-1080f, 1080f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_left_y_name"), IsAdvanced = true }));
 
             GlobalScale = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "全局缩放比例", 1.0f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_scale_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_scale_desc"),
+                new AcceptableValueRange<float>(0f, 5f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_left_scale_name"), IsAdvanced = true }));
 
             PanelSpacing = config.Bind("Left HUD Pannel Global / 左侧HUD全局设置", "面板间距", 15f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_space_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_left_space_desc"),
+                new AcceptableValueRange<float>(-1920f, 1920f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_left_space_name"), IsAdvanced = true }));
 
             // ==================== 右侧 HUD ====================
             RightGlobalOffsetX = config.Bind("Right HUD Pannel Global / 右侧HUD全局设置", "全局X轴偏移", 0f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_x_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_x_desc"),
+                new AcceptableValueRange<float>(-1920f, 1920f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_right_x_name"), IsAdvanced = true }));
 
             RightGlobalStartYOffset = config.Bind("Right HUD Pannel Global / 右侧HUD全局设置", "全局Y轴偏移", -180f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_y_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_y_desc"),
+                new AcceptableValueRange<float>(-1080f, 1080f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_right_y_name"), IsAdvanced = true }));
 
             RightGlobalScale = config.Bind("Right HUD Pannel Global / 右侧HUD全局设置", "全局缩放比例", 1.0f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_scale_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_scale_desc"),
+                new AcceptableValueRange<float>(0f, 5f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_right_scale_name"), IsAdvanced = true }));
 
             RightPanelSpacing = config.Bind("Right HUD Pannel Global / 右侧HUD全局设置", "面板间距", 15f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_space_desc"), null,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_space_desc"),
+                new AcceptableValueRange<float>(-1080f, 1080f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_right_space_name"), IsAdvanced = true }));
 
             // ==================== 顶部 HUD ====================
             TopGlobalOffsetY = config.Bind("Top HUD Pannel Global / 顶部HUD全局设置", "全局Y轴偏移", 85f,
-                new ConfigDescription("顶部面板距离屏幕边缘的初始距离", null,
+                new ConfigDescription("顶部面板距离屏幕边缘的初始距离",
+                new AcceptableValueRange<float>(-1080f, 1080f),
                 new ConfigurationManagerAttributes { IsAdvanced = true }));
 
             TopGlobalScale = config.Bind("Top HUD Pannel Global / 顶部HUD全局设置", "全局缩放比例", 1.0f,
-                new ConfigDescription("顶部所有面板的整体缩放比例", null,
+                new ConfigDescription("顶部所有面板的整体缩放比例",
+                new AcceptableValueRange<float>(0f, 5f),
                 new ConfigurationManagerAttributes { IsAdvanced = true }));
 
             TopPanelSpacing = config.Bind("Top HUD Pannel Global / 顶部HUD全局设置", "面板间距", 5f,
-                new ConfigDescription("顶部各面板之间的垂直间距", null,
+                new ConfigDescription("顶部各面板之间的垂直间距",
+                new AcceptableValueRange<float>(-1080f, 1080f),
                 new ConfigurationManagerAttributes { IsAdvanced = true }));
 
             // ==================== 视觉特效 ====================
-            RainbowUI = config.Bind("HUD Visuals / 视觉特效", "彩虹UI", false,
+            RainbowUI = config.Bind("HUD Visuals / 视觉效果", "彩虹UI", false,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_hud_rb_ui_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_rb_ui_name") }));
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_rb_ui_name"), IsAdvanced = true }));
 
-            RainbowUISpeed = config.Bind("HUD Visuals / 视觉特效", "彩虹UI滚动速度", 0.25f,
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_rb_spd_desc"), null,
+            RainbowUISpeed = config.Bind("HUD Visuals / 视觉效果", "彩虹UI滚动速度", 0.25f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_rb_spd_desc"),
+                new AcceptableValueRange<float>(0f, 1f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_rb_spd_name"), IsAdvanced = true }));
+
+            UIColorOverride = config.Bind("HUD Visuals / 视觉效果", "全局UI色彩覆盖", false,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_oc_ui_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_oc_ui_name") }));
+
+            OverrideColor = config.Bind("HUD Visuals / 视觉效果", "UI覆盖颜色", new Color(1f, 1f, 1f, 0.9f),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_oc_clr_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_oc_clr_name") }));
+
+            ShadowColor = config.Bind("HUD Visuals / 视觉效果", "文字阴影颜色", new Color(0.2f, 0.2f, 0.2f, 0.8f),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_shdw_clr_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_shdw_clr_name"), IsAdvanced = true }));
+
+            ShadowOffsetX = config.Bind("HUD Visuals / 视觉效果", "文字阴影X偏移量", 1.5f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_shdw_ofst_x_desc"),
+                new AcceptableValueRange<float>(-100f, 100f),
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_shdw_ofst_x_name"), IsAdvanced = true }));
+
+            ShadowOffsetY = config.Bind("HUD Visuals / 视觉效果", "文字阴影Y偏移量", 1.5f,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_shdw_ofst_y_desc"),
+                new AcceptableValueRange<float>(-100f, 100f),
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_shdw_ofst_y_name"), IsAdvanced = true }));
 
             // ==================== 初始化子面板 ====================
             FCSPanel.InitCfg(config);
@@ -190,8 +229,8 @@ namespace EFTBallisticCalculator.HUD
                 shadowText = _colorRegex.Replace(text, string.Empty);
             }
 
-            GUI.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
-            Rect shadowRect = new Rect(rect.x + 1.5f, rect.y + 1.5f, rect.width, rect.height);
+            GUI.color = ShadowColor.Value;
+            Rect shadowRect = new Rect(rect.x + ShadowOffsetX.Value, rect.y + ShadowOffsetY.Value, rect.width, rect.height);
             GUI.Label(shadowRect, shadowText, style);
 
             GUI.color = textColor;

@@ -410,7 +410,7 @@ namespace EFTBallisticCalculator
                 }
             }
             // 防呆机制：如果字典里忘了写这个翻译，直接把 Key 打印出来，提醒你补上
-            return $"[{key}]";
+            return key;
         }
     }
     internal sealed class ConfigurationManagerAttributes
