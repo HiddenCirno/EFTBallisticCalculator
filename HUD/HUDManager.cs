@@ -76,6 +76,7 @@ namespace EFTBallisticCalculator.HUD
             HealthPanel.InitCfg(config);
             ActiveBuffPanel.InitCfg(config);
             TeamPanel.InitCfg(config);
+            WeaponPanel.InitCfg(config);
         }
 
         public static void UpdateRainbowColor()
@@ -123,6 +124,8 @@ namespace EFTBallisticCalculator.HUD
 
             // 3. 渲染状态面板 (贴在队伍面板左侧，如果没有状态则不占空间)
             rightAnchorX = ActiveBuffPanel.Draw(rightAnchorX, rightCurrentY, rightScale);
+
+            WeaponPanel.Draw(RightGlobalScale.Value);
             // 未来这里还可以继续： rightCurrentY += RightPanelSpacing.Value * rightScale; TeamPanel.Draw(...)
 
             // ==========================================
