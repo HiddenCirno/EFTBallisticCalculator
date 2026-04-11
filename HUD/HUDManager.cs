@@ -67,7 +67,7 @@ namespace EFTBallisticCalculator.HUD
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_right_space_name"), IsAdvanced = true }));
 
             // ==================== 顶部 HUD ====================
-            TopGlobalOffsetY = config.Bind("Top HUD Pannel Global / 顶部HUD全局设置", "全局Y轴偏移", 15f,
+            TopGlobalOffsetY = config.Bind("Top HUD Pannel Global / 顶部HUD全局设置", "全局Y轴偏移", 90f,
                 new ConfigDescription("顶部面板距离屏幕边缘的初始距离", null,
                 new ConfigurationManagerAttributes { IsAdvanced = true }));
 
