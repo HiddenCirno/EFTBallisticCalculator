@@ -1,4 +1,5 @@
 ﻿using BepInEx.Configuration;
+using EFTBallisticCalculator.Locale;
 using System.Collections.Generic;
 using UnityEngine;
 

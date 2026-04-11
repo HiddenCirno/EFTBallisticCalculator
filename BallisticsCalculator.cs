@@ -1,5 +1,6 @@
 ﻿using BepInEx.Configuration;
 using EFT.Ballistics; // 引入 G1 阻力计算
+using EFTBallisticCalculator.Locale;
 using System;
 using UnityEngine;
 

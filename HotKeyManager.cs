@@ -1,5 +1,6 @@
 ﻿using BepInEx.Configuration;
 using EFTBallisticCalculator.HUD;
+using EFTBallisticCalculator.Locale;
 using UnityEngine;
 using static GClass2175;
 

@@ -1,4 +1,5 @@
 ﻿using BepInEx.Configuration;
+using EFTBallisticCalculator.Locale;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
@@ -246,7 +247,7 @@ namespace EFTBallisticCalculator.HUD
         {
             string[] dirs = { "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N" };
             string[] dirsch = { "北", "北偏东", "东北", "东偏北", "东", "东偏南", "东南", "南偏东", "南", "南偏西", "西南", "西偏南", "西", "西偏北", "西北", "北偏西", "北" };
-            if (LocaleManager.CurrentLanguage.Value == AppLanguage.简体中文)
+            if (LocaleManager.CurrentLanguage.Value == "简体中文")
             {
                 return dirsch[(int)Mathf.Round(((az % 360) / 22.5f))];
             }

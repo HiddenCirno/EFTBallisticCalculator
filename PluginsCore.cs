@@ -1,16 +1,21 @@
 ﻿using BepInEx;
 using EFT;
 using EFT.InventoryLogic;
-using HarmonyLib;
-using UnityEngine;
 using EFTBallisticCalculator.Core;
 using EFTBallisticCalculator.HUD;
+using EFTBallisticCalculator.Locale;
+using HarmonyLib;
+using System.IO;
+using System.Reflection;
+using UnityEngine;
 
 namespace EFTBallisticCalculator
 {
     [BepInPlugin(PluginsInfo.GUID, PluginsInfo.NAME, PluginsInfo.VERSION)]
     public class PluginsCore : BaseUnityPlugin
     {
+        public static string dllPath = Assembly.GetExecutingAssembly().Location;
+        public static string pluginDir = Path.GetDirectoryName(dllPath);
         #region 全局状态缓存
         public static bool _hasAmmo = false;
 

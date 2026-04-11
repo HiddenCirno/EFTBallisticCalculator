@@ -1,6 +1,7 @@
 ﻿using BepInEx.Configuration;
 using EFT;
 using EFT.InventoryLogic;
+using EFTBallisticCalculator.Locale;
 using System.Collections.Generic;
 using UnityEngine;
 
