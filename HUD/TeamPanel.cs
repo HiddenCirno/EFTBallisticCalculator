@@ -149,7 +149,7 @@ namespace EFTBallisticCalculator.HUD
                 DrawPlayerLine(record.Name, record.IsDead ? null : record.PlayerRef, false, finalX, ref currentY, rectWidth, lh, textStyle, mainColor);
             }
 
-            return currentY;
+            return finalX;
         }
 
         private static void DrawPlayerLine(string name, Player player, bool isSelf, float x, ref float y, float width, float lh, GUIStyle style, Color defaultColor)

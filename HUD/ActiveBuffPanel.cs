@@ -18,7 +18,7 @@ namespace EFTBallisticCalculator.HUD
             OffsetY = config.Bind("Buff Panel / 状态数据", "Y轴偏移", 0f, new ConfigDescription("面板纵向偏移", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
             Scale = config.Bind("Buff Panel / 状态数据", "缩放比例", 1.0f, new ConfigDescription("面板缩放比例", null, new ConfigurationManagerAttributes { IsAdvanced = true }));
             Active = config.Bind("Buff Panel / 状态数据", "显示面板", true, new ConfigDescription("是否启用状态面板"));
-            Color = config.Bind("Buff Panel / 状态数据", "颜色设置", new Color(1f, 0.8f, 0.9f, 0.85f), new ConfigDescription("默认文字颜色"));
+            Color = config.Bind("Buff Panel / 状态数据", "颜色设置", new Color(1f, 0.4f, 0.9f, 0.85f), new ConfigDescription("默认文字颜色"));
         }
 
         // 接收右侧锚点，返回占用后的最左侧坐标

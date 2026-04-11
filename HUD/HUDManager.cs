@@ -45,7 +45,7 @@ namespace EFTBallisticCalculator.HUD
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_left_space_name"), IsAdvanced = true }));
 
             // ==================== 右侧 HUD ====================
-            RightGlobalOffsetX = config.Bind("Right HUD Pannel Global / 右侧HUD全局设置", "全局X轴偏移", 280f, // 默认给380，因为要容纳面板宽度
+            RightGlobalOffsetX = config.Bind("Right HUD Pannel Global / 右侧HUD全局设置", "全局X轴偏移", 0f, // 默认给380，因为要容纳面板宽度
                 new ConfigDescription(CfgLocaleManager.Get("cfg_hud_right_x_desc"), null,
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_right_x_name"), IsAdvanced = true }));
 
@@ -74,6 +74,7 @@ namespace EFTBallisticCalculator.HUD
             FCSPanel.InitCfg(config);
             EnvPanel.InitCfg(config);
             HealthPanel.InitCfg(config);
+            ActiveBuffPanel.InitCfg(config);
             TeamPanel.InitCfg(config);
         }
 

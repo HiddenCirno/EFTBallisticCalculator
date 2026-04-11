@@ -32,7 +32,7 @@ namespace EFTBallisticCalculator.HUD
                 new ConfigDescription(CfgLocaleManager.Get("cfg_health_active_desc"), null,
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_health_active_name") }));
 
-            Color = config.Bind("Health Panel / 健康数据", "颜色设置", new Color(1f, 0.8f, 0.9f, 0.85f),
+            Color = config.Bind("Health Panel / 健康数据", "颜色设置", new Color(1f, 0.7f, 0.8f, 0.85f),
                 new ConfigDescription(CfgLocaleManager.Get("cfg_health_color_desc"), null,
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_health_color_name") }));
         }
@@ -51,10 +51,10 @@ namespace EFTBallisticCalculator.HUD
             float lh = 20f * finalScale;
             int titleSize = (int)(15 * finalScale);
             int textSize = (int)(13 * finalScale);
-            float rectWidth = 350f * finalScale;
+            float rectWidth = 300f * finalScale;
 
             // 动态向左推演：从右侧锚点减去自身宽度
-            float spacing = 15f * finalScale; // 面板间隙
+            float spacing = 0f * finalScale; // 面板间隙
             float finalX = anchorRightX - rectWidth - spacing + OffsetX.Value;
             float finalY = startY + OffsetY.Value;
 
