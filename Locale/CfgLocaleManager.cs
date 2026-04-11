@@ -17,8 +17,8 @@ namespace EFTBallisticCalculator.Locale
 
         public static void Init(ConfigFile config)
         {
-            string dirPath = Path.Combine(PluginsCore.dllPath, "locales", "menu");
-            if (!Directory.Exists(dirPath)) Directory.CreateDirectory(dirPath);
+            string dirPath = Path.Combine(PluginsCore.pluginDir, "locales", "menu");
+            //if (!Directory.Exists(dirPath)) Directory.CreateDirectory(dirPath);
 
             _loadedTranslations.Clear();
             List<string> availableLanguages = new List<string>();

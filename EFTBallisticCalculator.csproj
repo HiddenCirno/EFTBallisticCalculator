@@ -38,4 +38,10 @@
 		</Reference>
 	</ItemGroup>
 
+	<ItemGroup>
+		<None Include="locales\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
 </Project>
