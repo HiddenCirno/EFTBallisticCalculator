@@ -13,6 +13,10 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> RectWidth;
         public static ConfigEntry<bool> Active;
         public static ConfigEntry<Color> Color;
+        // 新增：用于计算移速的静态缓存
+        private static Vector3 _lastPos;
+        private static float _lastTime;
+        private static float _smoothedSpeed;
 
         public static void InitCfg(ConfigFile config)
         {
@@ -70,6 +74,30 @@ namespace EFTBallisticCalculator.HUD
 
             Vector3 playerTransform = PluginsCore.CorrectPlayer.Transform.position;
             float altitude = playerTransform.y;
+            // ==========================================
+            // 【新增】：平滑地速计算 (仅在 Repaint 阶段且间隔大于 0.1 秒时计算，防 OnGUI 陷阱)
+            // ==========================================
+            if (Event.current.type == EventType.Repaint)
+            {
+                float dt = Time.time - _lastTime;
+                if (dt >= 0.1f) // 10Hz 的采样率，足够平滑且节省性能
+                {
+                    // 只取水平 X, Z 轴，忽略掉落或跳跃的 Y 轴干扰
+                    Vector2 currentXZ = new Vector2(playerTransform.x, playerTransform.z);
+                    Vector2 lastXZ = new Vector2(_lastPos.x, _lastPos.z);
+
+                    float dist = Vector2.Distance(currentXZ, lastXZ);
+                    float currentSpeed = dist / dt;
+
+                    // 使用 Lerp 平滑过渡，防止数值瞎跳
+                    _smoothedSpeed = Mathf.Lerp(_smoothedSpeed, currentSpeed, 0.3f);
+
+                    _lastPos = playerTransform;
+                    _lastTime = Time.time;
+                }
+            }
+            // 极低速时强制归零，防止浮点数残留导致站着不动显示 0.1 m/s
+            if (_smoothedSpeed < 0.05f) _smoothedSpeed = 0f;
             float GetSwing(float x, float y, float muti) { return (Mathf.PerlinNoise(x, y) * 2f - 1f) * muti; }
 
             float windSpeed = PluginsCore._weatherSeedMap.windSpeed.b + PluginsCore._weatherSeedMap.windSpeed.r * 5f + GetSwing(Time.time * 0.003f, PluginsCore._weatherSeedGlobal + 2f, 2f);
@@ -98,19 +126,22 @@ namespace EFTBallisticCalculator.HUD
             string pressVal = string.Format(LocaleManager.Get("env_val_press"), hPa);
             string humVal = string.Format(LocaleManager.Get("env_val_hum"), humidity);
             string tempVal = string.Format(LocaleManager.Get("env_val_temp"), tempC, tempF);
+            // 新增：格式化移速 (同时显示 M/S 和 KM/H)
+            string moveSpeedVal = string.Format(LocaleManager.Get("env_val_move_spd"), _smoothedSpeed, _smoothedSpeed * 3.6f);
 
             // 绘制
             HUDManager.DrawShadowLabel(new Rect(finalX, finalY, 400, 25), LocaleManager.Get("env_title"), atmosColor, titleStyle);
             HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 1, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_loc"), PluginsCore._cachedLocationName), atmosColor, textStyle);
             HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 2, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_gps"), latVal, lonVal), atmosColor, textStyle);
             HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 3, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_time"), tarkovTimeStr, realTimeStr), atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 4, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_wind_dir"), windDirVal), atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 5, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_cross"), crossVal), atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 6, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_vect"), vectVal), atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 7, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_alt"), altVal), atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 8, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_press"), pressVal), atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 9, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_hum"), humVal), atmosColor, textStyle);
-            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 10, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_temp"), tempVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 4, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_move_spd"), moveSpeedVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 5, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_wind_dir"), windDirVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 6, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_cross"), crossVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 7, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_vect"), vectVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 8, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_alt"), altVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 9, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_press"), pressVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 10, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_hum"), humVal), atmosColor, textStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 11, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_temp"), tempVal), atmosColor, textStyle);
         }
     }
 }
