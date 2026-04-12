@@ -100,16 +100,19 @@ namespace EFTBallisticCalculator.HUD
             {
                 var hp = healthCtrl.GetBodyPartHealth(part);
                 string partName = part.ToString().Localized();
-                string statusText = "";
+                string statusText = healthCtrl.IsBodyPartDestroyed(part)  ? "[损毁]" : "[OK]";
 
                 var activeEffects = healthCtrl.GetAllActiveEffects(part);
                 if (activeEffects != null)
                 {
                     foreach (var effect in activeEffects)
                     {
+                        //var type = effect.Type.FullName.ToString().ToLower();
                         var variation = effect.DisplayableVariations?.FirstOrDefault();
-                        string effectName = (variation != null && variation.BuffType != GClass3056.EBuffType.Stimulant) ? variation.Buffs?.FirstOrDefault()?.Text ?? "" : "";
-
+                        //string effectName = (!type.Contains("encumber") && !type.Contains("over") && !type.Contains("weight") && !type.Contains("exhaustion") && variation != null && variation.BuffType != GClass3056.EBuffType.Stimulant) ? variation.Buffs?.FirstOrDefault()?.Text ?? "" : "";
+                        //怪了, 怎么改都滤不掉超重
+                        //暂且搁置吧
+                        string effectName = (variation != null && variation.BuffType != GClass3056.EBuffType.Stimulant) ? variation.Buffs?.FirstOrDefault()?.Text?.Localized() ?? "" : "";
                         var notInBlackList = (effectName != "SevereMusclePain" && effectName != "MildMusclePain" && effectName != "Exhaustion");
                         if (!string.IsNullOrEmpty(effectName) && notInBlackList && part != EBodyPart.Head && part != EBodyPart.Chest)
                         {
@@ -118,7 +121,6 @@ namespace EFTBallisticCalculator.HUD
                     }
                 }
 
-                if (string.IsNullOrEmpty(statusText)) statusText = hp.Current <= 0 ? "[损毁]" : "[OK]";
 
                 string line = $"{partName.PadRight(10)} : {hp.Current:F0}/{hp.Maximum:F0}  {statusText}";
                 HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), line, mainColor, textStyle); currentY += lh;
