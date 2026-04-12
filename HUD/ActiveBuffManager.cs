@@ -1,5 +1,4 @@
-﻿// ActiveBuffManager.cs
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,15 +6,10 @@ using System.Reflection;
 using EFT;
 using EFT.HealthSystem;
 using UnityEngine;
+using System.Text.RegularExpressions;
 
 namespace EFTBallisticCalculator.HUD
 {
-    /// <summary>
-    /// 负责捕获、更新、合并所有玩家身上的 Buff/Debuff。
-    /// 核心逻辑移植自 MedEffectsHUD，支持事件订阅 + 深度扫描 + 容器时间读取。
-    /// 修改：只保留一个 AllEffects 列表，不分正负面。
-    /// 依赖 PluginsCore.CorrectPlayer，无需自行查找。
-    /// </summary>
     public static class ActiveBuffManager
     {
         public class DisplayEffect
@@ -43,7 +37,34 @@ namespace EFTBallisticCalculator.HUD
 
         private static readonly List<DisplayEffect> _allEffects = new List<DisplayEffect>();
 
-        private static float _lastUpdateTime; 
+        // ==========================================
+        // 【优化 1：对象池与免分配静态容器】
+        // ==========================================
+        private static readonly Stack<DisplayEffect> _effectPool = new Stack<DisplayEffect>();
+        private static readonly List<string> _deadKeys = new List<string>();
+        private static readonly HashSet<int> _scanVisited = new HashSet<int>();
+        private static readonly List<string> _staleKeys = new List<string>();
+
+        // 使用 struct 代替 String 拼接，实现 0 GC 哈希查重
+        private struct EffectIdentity : IEquatable<EffectIdentity>
+        {
+            public string Name;
+            public float Strength;
+            public bool Equals(EffectIdentity other) => Name == other.Name && Math.Abs(Strength - other.Strength) < 0.001f;
+            public override int GetHashCode() => (Name?.GetHashCode() ?? 0) ^ Strength.GetHashCode();
+        }
+        private static readonly HashSet<EffectIdentity> _seenEffects = new HashSet<EffectIdentity>();
+
+        // ==========================================
+        // 【优化 2：反射极速缓存】
+        // ==========================================
+        private static readonly Dictionary<(Type, string), PropertyInfo> _propCache = new Dictionary<(Type, string), PropertyInfo>();
+        private static readonly Dictionary<(Type, string), FieldInfo> _fieldCache = new Dictionary<(Type, string), FieldInfo>();
+
+        // 编译好的正则，拒绝每帧创建状态机
+        private static readonly Regex _colorRegex = new Regex(@"<color=[^>]*>", RegexOptions.Compiled);
+
+        private static float _lastUpdateTime;
         public static float LastUpdateTime => _lastUpdateTime;
         private const float UPDATE_INTERVAL = 0.5f;
         private static int _tick;
@@ -87,17 +108,23 @@ namespace EFTBallisticCalculator.HUD
             _healthController = null;
             _eventsSubscribed = false;
             _deepScanDone = false;
-            _allEffects.Clear();
             _capturedBuffs.Clear();
             _buffToContainer.Clear();
             _containerIds.Clear();
             _containers.Clear();
             _buffWholeTimeOffset.Clear();
+
+            // 归还所有特效到对象池
+            foreach (var effect in _allEffects) _effectPool.Push(effect);
+            _allEffects.Clear();
         }
 
         private static void RefreshEffects()
         {
+            // 1. 将现有的特效全部打回对象池，避免 new 操作
+            foreach (var effect in _allEffects) _effectPool.Push(effect);
             _allEffects.Clear();
+
             if (_healthController == null) return;
 
             _tick++;
@@ -106,16 +133,17 @@ namespace EFTBallisticCalculator.HUD
             if (!_deepScanDone) DeepScanHealthController();
             if (_tick % 3 == 0) QuickRescan();
 
-            var deadKeys = new List<string>();
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // 2. 清空并复用静态容器
+            _deadKeys.Clear();
+            _seenEffects.Clear();
 
             foreach (var kv in _capturedBuffs)
             {
                 try
                 {
                     var buff = kv.Value;
-                    if (buff == null) { deadKeys.Add(kv.Key); continue; }
-                    if (!GetBoolProp(buff, "Active", true)) { deadKeys.Add(kv.Key); continue; }
+                    if (buff == null) { _deadKeys.Add(kv.Key); continue; }
+                    if (!GetBoolProp(buff, "Active", true)) { _deadKeys.Add(kv.Key); continue; }
 
                     string buffName = GetStringProp(buff, "BuffName");
                     if (string.IsNullOrEmpty(buffName)) continue;
@@ -124,24 +152,61 @@ namespace EFTBallisticCalculator.HUD
                     float timeLeft = SanitizeTimer(GetBuffTimeLeft(buff));
 
                     string displayName = StripValueFromName(StripColorTags(buffName));
-                    string uniqueKey = $"{displayName}|{value:F2}";
 
-                    var de = new DisplayEffect
-                    {
-                        Name = displayName,
-                        TimeLeft = timeLeft,
-                        Strength = value,
-                        EffectId = GetBuffEffectId(buff)
-                    };
-                    AddDedup(_allEffects, seen, de, uniqueKey);
+                    // 使用 Struct 键值对，彻底消灭 string.Format 产生的 GC Alloc
+                    var identity = new EffectIdentity { Name = displayName, Strength = value };
+
+                    AddDedup(identity, displayName, timeLeft, value, GetBuffEffectId(buff));
                 }
                 catch { }
             }
 
-            foreach (var dk in deadKeys) _capturedBuffs.Remove(dk);
+            // 3. 批量移除死掉的 Key
+            for (int i = 0; i < _deadKeys.Count; i++) _capturedBuffs.Remove(_deadKeys[i]);
 
             if (_allEffects.Count > 1)
                 _allEffects.Sort((a, b) => a.TimeLeft.CompareTo(b.TimeLeft));
+        }
+
+        private static void AddDedup(EffectIdentity identity, string displayName, float timeLeft, float strength, string effectId)
+        {
+            var existing = _allEffects.Find(e => e.Name == displayName);
+            if (existing != null)
+            {
+                bool sameStrength = Math.Abs(existing.Strength - strength) < 0.001f || (existing.Strength == 0f && strength == 0f);
+                if (!sameStrength && strength != 0f && existing.Strength != 0f)
+                {
+                    if (!_seenEffects.Contains(identity))
+                    {
+                        _seenEffects.Add(identity);
+                        _allEffects.Add(GetEffectFromPool(displayName, timeLeft, strength, effectId));
+                    }
+                    return;
+                }
+                if (timeLeft > 0 && (existing.TimeLeft <= 0 || timeLeft > existing.TimeLeft))
+                    existing.TimeLeft = timeLeft;
+                if (strength != 0f)
+                    existing.Strength = strength;
+
+                _seenEffects.Add(identity);
+                return;
+            }
+
+            if (!_seenEffects.Contains(identity))
+            {
+                _seenEffects.Add(identity);
+                _allEffects.Add(GetEffectFromPool(displayName, timeLeft, strength, effectId));
+            }
+        }
+
+        private static DisplayEffect GetEffectFromPool(string name, float timeLeft, float strength, string effectId)
+        {
+            var effect = _effectPool.Count > 0 ? _effectPool.Pop() : new DisplayEffect();
+            effect.Name = name;
+            effect.TimeLeft = timeLeft;
+            effect.Strength = strength;
+            effect.EffectId = effectId;
+            return effect;
         }
 
         // ---------- 时间获取 ----------
@@ -175,7 +240,7 @@ namespace EFTBallisticCalculator.HUD
         {
             try
             {
-                var settingsProp = buff.GetType().GetProperty("Settings", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                var settingsProp = GetPropertyCached(buff.GetType(), "Settings");
                 if (settingsProp == null) return -1f;
                 var settings = settingsProp.GetValue(buff);
                 if (settings == null) return -1f;
@@ -250,8 +315,15 @@ namespace EFTBallisticCalculator.HUD
 
                 string buffName = GetStringProp(buff, "BuffName");
                 string bodyPart = GetStringProp(buff, "BodyPart");
-                var staleKeys = _capturedBuffs.Keys.Where(k => k.StartsWith($"{buffName}|{bodyPart}|")).ToList();
-                foreach (var sk in staleKeys) _capturedBuffs.Remove(sk);
+
+                // 消灭 LINQ Alloc
+                _staleKeys.Clear();
+                string prefix = $"{buffName}|{bodyPart}|";
+                foreach (var k in _capturedBuffs.Keys)
+                {
+                    if (k.StartsWith(prefix)) _staleKeys.Add(k);
+                }
+                for (int i = 0; i < _staleKeys.Count; i++) _capturedBuffs.Remove(_staleKeys[i]);
 
                 _capturedBuffs[key] = buff;
                 int bid = buff.GetHashCode();
@@ -294,16 +366,16 @@ namespace EFTBallisticCalculator.HUD
             if (_deepScanDone) return;
             _deepScanDone = true;
             ResolveIPB();
-            var visited = new HashSet<int>();
-            DeepScan(_healthController, 0, 5, visited, "HC");
-            ScanEffectsForBuffs(visited);
+            _scanVisited.Clear();
+            DeepScan(_healthController, 0, 5, _scanVisited, "HC");
+            ScanEffectsForBuffs(_scanVisited);
         }
 
         private static void QuickRescan()
         {
             try
             {
-                var visited = new HashSet<int>();
+                _scanVisited.Clear();
                 var hcType = _healthController.GetType();
                 var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
@@ -312,11 +384,11 @@ namespace EFTBallisticCalculator.HUD
                 {
                     var list0 = t.GetField("List_0", flags);
                     if (list0?.GetValue(_healthController) is IList l0)
-                        foreach (var c in l0) if (c != null) DeepScan(c, 0, 3, visited, "QS.L0");
+                        foreach (var c in l0) if (c != null) DeepScan(c, 0, 3, _scanVisited, "QS.L0");
 
                     var dict1 = t.GetField("Dictionary_1", flags);
                     if (dict1?.GetValue(_healthController) is IDictionary d1)
-                        foreach (DictionaryEntry de in d1) if (de.Value != null) DeepScan(de.Value, 0, 3, visited, "QS.D1");
+                        foreach (DictionaryEntry de in d1) if (de.Value != null) DeepScan(de.Value, 0, 3, _scanVisited, "QS.D1");
 
                     t = t.BaseType;
                 }
@@ -330,7 +402,7 @@ namespace EFTBallisticCalculator.HUD
             foreach (var container in _containers)
             {
                 if (container == null) continue;
-                var buffsField = container.GetType().GetField("Buffs", BindingFlags.Public | BindingFlags.Instance);
+                var buffsField = GetFieldCached(container.GetType(), "Buffs");
                 if (buffsField?.GetValue(container) is IList buffsList)
                 {
                     foreach (var buff in buffsList)
@@ -389,8 +461,7 @@ namespace EFTBallisticCalculator.HUD
 
         private static int TryReadBuffContainer(object obj, string path)
         {
-            var t = obj.GetType();
-            var buffsField = t.GetField("Buffs", BindingFlags.Public | BindingFlags.Instance);
+            var buffsField = GetFieldCached(obj.GetType(), "Buffs");
             if (buffsField?.GetValue(obj) is IList buffsList && buffsList.Count > 0)
             {
                 int cid = obj.GetHashCode();
@@ -425,7 +496,6 @@ namespace EFTBallisticCalculator.HUD
             }
         }
 
-        // ---------- IPlayerBuff 识别 ----------
         private static void ResolveIPB()
         {
             if (_ipbSearched) return;
@@ -447,20 +517,42 @@ namespace EFTBallisticCalculator.HUD
             if (obj == null) return false;
             if (_ipbType != null && _ipbType.IsInstanceOfType(obj)) return true;
             var type = obj.GetType();
-            return type.GetProperty("BuffName") != null &&
-                   type.GetProperty("Value") != null &&
-                   type.GetProperty("Active") != null;
+            return GetPropertyCached(type, "BuffName") != null &&
+                   GetPropertyCached(type, "Value") != null &&
+                   GetPropertyCached(type, "Active") != null;
         }
 
-        // ---------- 反射辅助 ----------
+        // ==========================================
+        // 【反射极速读取模块】
+        // ==========================================
+        private static PropertyInfo GetPropertyCached(Type type, string name)
+        {
+            var key = (type, name);
+            if (_propCache.TryGetValue(key, out var prop)) return prop;
+
+            prop = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            _propCache[key] = prop;
+            return prop;
+        }
+
+        private static FieldInfo GetFieldCached(Type type, string name)
+        {
+            var key = (type, name);
+            if (_fieldCache.TryGetValue(key, out var field)) return field;
+
+            field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            _fieldCache[key] = field;
+            return field;
+        }
+
         private static float GetFloatProp(object obj, string name)
         {
             try
             {
                 var type = obj.GetType();
-                var prop = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                var prop = GetPropertyCached(type, name);
                 if (prop != null && prop.GetValue(obj) is float f) return f;
-                var field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                var field = GetFieldCached(type, name);
                 if (field != null && field.GetValue(obj) is float f2) return f2;
             }
             catch { }
@@ -472,9 +564,9 @@ namespace EFTBallisticCalculator.HUD
             try
             {
                 var type = obj.GetType();
-                var prop = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                var prop = GetPropertyCached(type, name);
                 if (prop != null && prop.GetValue(obj) is bool b) return b;
-                var field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                var field = GetFieldCached(type, name);
                 if (field != null && field.GetValue(obj) is bool b2) return b2;
             }
             catch { }
@@ -486,9 +578,9 @@ namespace EFTBallisticCalculator.HUD
             try
             {
                 var type = obj.GetType();
-                var prop = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                var prop = GetPropertyCached(type, name);
                 if (prop != null) return prop.GetValue(obj)?.ToString();
-                var field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                var field = GetFieldCached(type, name);
                 if (field != null) return field.GetValue(obj)?.ToString();
             }
             catch { }
@@ -505,7 +597,7 @@ namespace EFTBallisticCalculator.HUD
         private static string StripColorTags(string s)
         {
             if (string.IsNullOrEmpty(s)) return s;
-            s = System.Text.RegularExpressions.Regex.Replace(s, @"<color=[^>]*>", "");
+            s = _colorRegex.Replace(s, "");
             s = s.Replace("</color>", "");
             return s.Trim();
         }
@@ -525,30 +617,5 @@ namespace EFTBallisticCalculator.HUD
 
         private static float SanitizeTimer(float val) =>
             float.IsNaN(val) || float.IsInfinity(val) || val < -1f || val > 100000f ? -1f : val;
-
-        private static void AddDedup(List<DisplayEffect> list, HashSet<string> seen, DisplayEffect de, string key)
-        {
-            if (seen.Contains(key)) return;
-            var existing = list.Find(e => e.Name == de.Name);
-            if (existing != null)
-            {
-                bool sameStrength = Math.Abs(existing.Strength - de.Strength) < 0.001f
-                                 || (existing.Strength == 0f && de.Strength == 0f);
-                if (!sameStrength && de.Strength != 0f && existing.Strength != 0f)
-                {
-                    seen.Add(key);
-                    list.Add(de);
-                    return;
-                }
-                if (de.TimeLeft > 0 && (existing.TimeLeft <= 0 || de.TimeLeft > existing.TimeLeft))
-                    existing.TimeLeft = de.TimeLeft;
-                if (de.Strength != 0f)
-                    existing.Strength = de.Strength;
-                seen.Add(key);
-                return;
-            }
-            seen.Add(key);
-            list.Add(de);
-        }
     }
 }
