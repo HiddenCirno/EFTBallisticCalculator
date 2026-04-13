@@ -25,6 +25,7 @@ namespace EFTBallisticCalculator.HUD
             public Player PlayerRef;
             public bool IsDead;
         }
+        private static EFT.GameWorld _lastGameWorld = null;
         private static bool _isDebugMode = false; // 测试完毕后改成 false 即可
         private static int _debugTargetCount = 4; // 抓几个倒霉蛋当队友？
         private static HashSet<string> _debugFakeTeammates = new HashSet<string>();
@@ -69,6 +70,14 @@ namespace EFTBallisticCalculator.HUD
             _lastScanTime = Time.time;
 
             var gw = PluginsCore.CorrectGameWorld;
+
+            // 【核心修复 1】：自动检测新战局并清空残留的队伍数据
+            if (gw != null && gw != _lastGameWorld)
+            {
+                _roster.Clear();
+                _debugFakeTeammates.Clear();
+                _lastGameWorld = gw;
+            }
             string myGroupId = PluginsCore.CorrectGroupId;
 
             if (gw == null || string.IsNullOrEmpty(myGroupId)) return;
@@ -120,7 +129,10 @@ namespace EFTBallisticCalculator.HUD
                     }
 
                     record.PlayerRef = player;
-                    record.IsDead = player.ActiveHealthController == null || !player.ActiveHealthController.IsAlive;
+                    if (player.ActiveHealthController != null && !player.ActiveHealthController.IsAlive)
+                    {
+                        record.IsDead = true;
+                    }
                 }
             }
 
@@ -165,35 +177,46 @@ namespace EFTBallisticCalculator.HUD
             currentY += lh;
 
             // 1. 绘制自己 (You)
-            DrawPlayerLine(PluginsCore.CorrectPlayer.Profile?.Info?.Nickname ?? "YOU", PluginsCore.CorrectPlayer, true, finalX, ref currentY, rectWidth, lh, textStyle, mainColor);
+            DrawPlayerLine(PluginsCore.CorrectPlayer.Profile?.Info?.Nickname ?? "YOU", PluginsCore.CorrectPlayer, true, !PluginsCore.CorrectPlayer?.ActiveHealthController?.IsAlive ?? false, finalX, ref currentY, rectWidth, lh, textStyle, mainColor);
 
             // 2. 绘制花名册里的所有队友 (Teammates)
             foreach (var record in _roster.Values)
             {
-                DrawPlayerLine(record.Name, record.IsDead ? null : record.PlayerRef, false, finalX, ref currentY, rectWidth, lh, textStyle, mainColor);
+                DrawPlayerLine(record.Name, record.PlayerRef, false, record.IsDead, finalX, ref currentY, rectWidth, lh, textStyle, mainColor);
             }
 
             // 返回最终的底部 Y 坐标
             return currentY; 
         }
 
-        private static void DrawPlayerLine(string name, Player player, bool isSelf, float x, ref float y, float width, float lh, GUIStyle style, Color defaultColor)
+        private static void DrawPlayerLine(string name, Player player, bool isSelf, bool isKnownDead, float x, ref float y, float width, float lh, GUIStyle style, Color defaultColor)
         {
             string prefix = isSelf ? LocaleManager.Get("team_you") : LocaleManager.Get("team_ally");
 
             // 如果 player 引用丢失或已被标记为死亡
-            if (player == null || player.ActiveHealthController == null || !player.ActiveHealthController.IsAlive)
+            if (isKnownDead)
             {
                 string deadLine = string.Format(LocaleManager.Get("team_teammate_dead"),
                     LocaleManager.Get("team_teammate_color_dead"),
                     prefix,
                     name,
-                    LocaleManager.Get("team_teammate_dead_tag"));//$"<b>{prefix} {name}</b> - <color=#ff4444><b>[DEAD/LOST]</b></color>";
+                    LocaleManager.Get("team_teammate_dead_tag"));
                 HUDManager.DrawShadowLabel(new Rect(x, y, width, lh), deadLine, defaultColor, style);
                 y += lh;
                 return;
             }
-
+            // 2. Fika 联机同步中 (Player 对象存在，但健康/物理组件还未在客户端实例化)
+            if (player == null || player.ActiveHealthController == null || player.Physical == null)
+            {
+                string syncLine = string.Format(LocaleManager.Get("team_teammate_dead"),
+                    LocaleManager.Get("team_teammate_color_loading"),
+                    prefix,
+                    name,
+                    LocaleManager.Get("team_teammate_loading_tag"));
+                HUDManager.DrawShadowLabel(new Rect(x, y, width, lh), syncLine, defaultColor, style);
+                y += lh;
+                return;
+            }
             var healthCtrl = player.ActiveHealthController;
             var physCtrl = player.Physical;
 

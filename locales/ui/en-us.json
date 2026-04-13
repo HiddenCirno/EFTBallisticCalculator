@@ -122,6 +122,8 @@
         "weapon_mag_color_0": "#BA0303",
         "weapon_mag_color_1": "#FFFF00",
         "weapon_mag_color_2": "#FFFFFF",
-        "weapon_ammo": "MODE : <color=#FFAA00>{0}</color> | {1} | CHBR : <color=#55FF55>{2}</color> >> NXT : {3}"
+        "weapon_ammo": "MODE : <color=#FFAA00>{0}</color> | {1} | CHBR : <color=#55FF55>{2}</color> >> NXT : {3}",
+        "team_teammate_color_loading": "#FFFF00",
+        "team_teammate_loading_tag": "<color=#ffaa00>[SYNCING]</color>"
     }
 }
