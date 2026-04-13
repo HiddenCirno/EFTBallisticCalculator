@@ -70,7 +70,7 @@ namespace EFTBallisticCalculator.HUD
 
             float currentY = finalY;
 
-            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), "<b>[ ACTIVE STATUS ]</b>", mainColor, titleStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), LocaleManager.Get("health_buff_title"), mainColor, titleStyle);
             currentY += lh;
 
             float elapsedSinceScan = Time.time - ActiveBuffManager.LastUpdateTime;
@@ -84,9 +84,9 @@ namespace EFTBallisticCalculator.HUD
                     displayTime = Mathf.Max(0f, displayTime - elapsedSinceScan);
                 }
 
-                string timeStr = displayTime > 0 ? $" ({displayTime:F0}s)" : "";
+                string timeStr = displayTime > 0 ? LocaleManager.Get("health_buff_time") : "";
                 string valueStr = buff.Strength != 0 ? $" {(buff.Strength > 0 ? "+" : "")}{buff.Strength:G3}" : "";
-                string display = $"{buff.Name}{valueStr}{timeStr}";
+                string display = $"{buff.Name}{valueStr} {timeStr}";
 
                 HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), display, mainColor, textStyle);
                 currentY += lh;

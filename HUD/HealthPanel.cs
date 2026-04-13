@@ -74,18 +74,36 @@ namespace EFTBallisticCalculator.HUD
 
             float currentY = finalY;
 
-            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), "<b>[ BIOMETRIC SENSORS ACTIVE ]</b>", mainColor, titleStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), LocaleManager.Get("health_bio_title"), mainColor, titleStyle);
             currentY += lh;
 
             // --- 区块 1：基本生存指标 ---
             float totalHealth = healthCtrl.GetBodyPartHealth(EBodyPart.Common).Current;
             float totalMaxHealth = healthCtrl.GetBodyPartHealth(EBodyPart.Common).Maximum;
 
-            string hydStr = $"HYDRATN : {healthCtrl.Hydration.Current:F0}/{healthCtrl.Hydration.Maximum:F0} {healthCtrl.HydrationRate:+0.00;-0.00;0.00}/min";
-            string engStr = $"ENERGY  : {healthCtrl.Energy.Current:F0}/{healthCtrl.Energy.Maximum:F0} {healthCtrl.EnergyRate:+0.00;-0.00;0.00}/min";
-            string tempStr = $"TEMP    : {healthCtrl.Temperature.Current:F1} °C";
+            string hydStr = string.Format(
+                LocaleManager.Get("health_bio_hydr"),
+                    LocaleManager.Get($"health_bio_hydr_color_{HealthStatusLow(healthCtrl.Hydration.Current, healthCtrl.Hydration.Maximum)}"),
+                    healthCtrl.Hydration.Current, 
+                    healthCtrl.Hydration.Maximum, 
+                    LocaleManager.Get($"health_bio_hydr_status_{GetHealthStatus(healthCtrl.Hydration.Current, healthCtrl.Hydration.Maximum)}"), 
+                    healthCtrl.HydrationRate);
+            string engStr = string.Format(
+                LocaleManager.Get("health_bio_energy"),
+                    LocaleManager.Get($"health_bio_energy_color_{HealthStatusLow(healthCtrl.Energy.Current, healthCtrl.Energy.Maximum)}"),
+                    healthCtrl.Energy.Current,
+                    healthCtrl.Energy.Maximum,
+                    LocaleManager.Get($"health_bio_energy_status_{GetHealthStatus(healthCtrl.Energy.Current, healthCtrl.Energy.Maximum)}"),
+                    healthCtrl.EnergyRate);
+            string tempStr = string.Format(LocaleManager.Get("health_bio_temp"), healthCtrl.Temperature.Current);
 
-            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"OVERALL : {totalHealth:F0}/{totalMaxHealth:F0} {healthCtrl.HealthRate:+0.00;-0.00;0.00}/min", mainColor, textStyle); currentY += lh;
+            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), 
+                string.Format(LocaleManager.Get("health_bio_hp"),
+                    LocaleManager.Get($"health_bio_hp_color_{HealthStatusLow(totalHealth, totalMaxHealth)}"),
+                    totalHealth,
+                    totalMaxHealth,
+                    healthCtrl.HealthRate),
+                mainColor, textStyle); currentY += lh;
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), hydStr, mainColor, textStyle); currentY += lh;
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), engStr, mainColor, textStyle); currentY += lh;
             HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), tempStr, mainColor, textStyle); currentY += lh;
@@ -93,14 +111,14 @@ namespace EFTBallisticCalculator.HUD
             currentY += 5f * finalScale;
 
             // --- 区块 2：肢体诊断 ---
-            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), "<b>[ LIMB DIAGNOSTICS ]</b>", mainColor, titleStyle); currentY += lh;
+            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), LocaleManager.Get("health_limb_title"), mainColor, titleStyle); currentY += lh;
 
             EBodyPart[] partsToDraw = { EBodyPart.Head, EBodyPart.Chest, EBodyPart.Stomach, EBodyPart.LeftArm, EBodyPart.RightArm, EBodyPart.LeftLeg, EBodyPart.RightLeg };
             foreach (var part in partsToDraw)
             {
                 var hp = healthCtrl.GetBodyPartHealth(part);
                 string partName = part.ToString().Localized();
-                string statusText = healthCtrl.IsBodyPartDestroyed(part)  ? "[损毁]" : "[OK]";
+                string statusText = healthCtrl.IsBodyPartDestroyed(part)  ? LocaleManager.Get("health_limb_part_destroy") : LocaleManager.Get("health_limb_part_healthy");
 
                 var activeEffects = healthCtrl.GetAllActiveEffects(part);
                 if (activeEffects != null)
@@ -116,36 +134,86 @@ namespace EFTBallisticCalculator.HUD
                         var notInBlackList = (effectName != "SevereMusclePain" && effectName != "MildMusclePain" && effectName != "Exhaustion");
                         if (!string.IsNullOrEmpty(effectName) && notInBlackList && part != EBodyPart.Head && part != EBodyPart.Chest)
                         {
-                            statusText += $"[{effectName}] ";
+                            statusText += string.Format(LocaleManager.Get("health_limb_part_buff"),effectName);
                         }
                     }
                 }
 
 
-                string line = $"{partName.PadRight(10)} : {hp.Current:F0}/{hp.Maximum:F0}  {statusText}";
+                string line = string.Format(LocaleManager.Get("health_limb_part_hp"),
+                    partName,//.PadLeft(10),
+                    LocaleManager.Get($"health_limb_part_hp_color_{HealthStatusLow(hp.Current, hp.Maximum)}"), 
+                    hp.Current, 
+                    hp.Maximum,
+                    statusText);
                 HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), line, mainColor, textStyle); currentY += lh;
             }
 
             currentY += 5f * finalScale;
 
             // --- 区块 3：战斗与耐力 ---
-            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), "<b>[ COMBAT & STAMINA ]</b>", mainColor, titleStyle); currentY += lh;
+            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), LocaleManager.Get("health_endur_title"), mainColor, titleStyle); currentY += lh;
 
             float weight = physCtrl.IobserverToPlayerBridge_0.TotalWeight;
             float overWeight = physCtrl.BaseOverweightLimits.x;
             float maxWeight = physCtrl.BaseOverweightLimits.y;
             float weightLimit = weight >= overWeight ? maxWeight : overWeight;
+            string weightColor = weight < overWeight ? LocaleManager.Get("health_endur_normal_weight_color") : weight >= overWeight ? LocaleManager.Get("health_endur_over_weight_color") : LocaleManager.Get("health_endur_critical_weight_color");
 
-            string weightStatus = "[NORMAL]";
-            if (weight >= overWeight) weightStatus = "[OVERWEIGHT]";
-            if (weight >= maxWeight) weightStatus = "[CRITICAL]";
+            string weightStatus = string.Format(LocaleManager.Get("health_endur_normal_weight"), LocaleManager.Get("health_endur_normal_weight_color"));
+            if (weight >= overWeight) weightStatus = string.Format(LocaleManager.Get("health_endur_over_weight"), LocaleManager.Get("health_endur_over_weight_color"));
+            if (weight >= maxWeight) weightStatus = string.Format(LocaleManager.Get("health_endur_critical_weight"), LocaleManager.Get("health_endur_critical_weight_color"));
 
-            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"WEIGHT  : {weight:F2}/{weightLimit:F0} {weightStatus}", mainColor, textStyle); currentY += lh;
-            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"OXYGEN : {physCtrl.Oxygen.Current:F1}/{physCtrl.Oxygen.TotalCapacity.Value:F1} ({(physCtrl.Oxygen.Current / physCtrl.Oxygen.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
-            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"UPPER STM : {physCtrl.HandsStamina.Current:F1}/{physCtrl.HandsStamina.TotalCapacity.Value:F1} ({(physCtrl.HandsStamina.Current / physCtrl.HandsStamina.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
-            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), $"LOWER STM : {physCtrl.Stamina.Current:F1}/{physCtrl.Stamina.TotalCapacity.Value:F1} ({(physCtrl.Stamina.Current / physCtrl.Stamina.TotalCapacity * 100):F0}%)", mainColor, textStyle); currentY += lh;
+            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh),
+                string.Format(LocaleManager.Get("health_endur_weight"),
+                    weightColor,
+                    weight,
+                    weightLimit,
+                    weightStatus), 
+                mainColor, textStyle); currentY += lh;
+            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh),
+                string.Format(LocaleManager.Get("health_endur_oxygen"),
+                    LocaleManager.Get("health_endur_oxygen_color"),
+                    physCtrl.Oxygen.Current,
+                    physCtrl.Oxygen.TotalCapacity.Value,
+                    physCtrl.Oxygen.Current / physCtrl.Oxygen.TotalCapacity.Value * 100), 
+                mainColor, textStyle); currentY += lh;
+            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh),
+                string.Format(LocaleManager.Get("health_endur_upper_stam"),
+                    LocaleManager.Get("health_endur_upper_stam_color"),
+                    physCtrl.HandsStamina.Current,
+                    physCtrl.HandsStamina.TotalCapacity.Value,
+                    physCtrl.HandsStamina.Current / physCtrl.HandsStamina.TotalCapacity.Value * 100),
+                mainColor, textStyle); currentY += lh;
+            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh),
+                string.Format(LocaleManager.Get("health_endur_lower_stam"),
+                    LocaleManager.Get("health_endur_lower_stam_color"),
+                    physCtrl.Stamina.Current,
+                    physCtrl.Stamina.TotalCapacity.Value,
+                    physCtrl.Stamina.Current / physCtrl.Stamina.TotalCapacity.Value * 100),
+                mainColor, textStyle); currentY += lh;
 
             return finalX; // 返回占用后的最左侧坐标
+        }
+        public static int GetHealthStatus(float current, float max)
+        {
+            if (max <= 0f) return 0; // 防呆：防止除以 0
+
+            float ratio = current / max;
+
+            if (ratio <= 0f) return 0;          // 脱水/力竭
+            if (ratio <= 0.20f) return 1;       // 极低
+            if (ratio <= 0.50f) return 2;       // 较低
+            return 3;                           // 健康
+        }
+        public static int HealthStatusLow(float current, float max)
+        {
+            if (max <= 0f) return 0; // 防呆：防止除以 0
+
+            float ratio = current / max;
+
+            if (ratio <= 0.20f) return 0;       // 极低
+            return 1;                           // 健康
         }
     }
 }

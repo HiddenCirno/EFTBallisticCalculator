@@ -161,7 +161,7 @@ namespace EFTBallisticCalculator.HUD
 
             float currentY = finalY;
 
-            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), "<b>[ SQUAD BIOMETRICS ]</b>", mainColor, titleStyle);
+            HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, 25), LocaleManager.Get("team_title"), mainColor, titleStyle);
             currentY += lh;
 
             // 1. 绘制自己 (You)
@@ -179,12 +179,16 @@ namespace EFTBallisticCalculator.HUD
 
         private static void DrawPlayerLine(string name, Player player, bool isSelf, float x, ref float y, float width, float lh, GUIStyle style, Color defaultColor)
         {
-            string prefix = isSelf ? "[YOU]" : "[ALLY]";
+            string prefix = isSelf ? LocaleManager.Get("team_you") : LocaleManager.Get("team_ally");
 
             // 如果 player 引用丢失或已被标记为死亡
             if (player == null || player.ActiveHealthController == null || !player.ActiveHealthController.IsAlive)
             {
-                string deadLine = $"<b>{prefix} {name}</b> - <color=#ff4444><b>[DEAD/LOST]</b></color>";
+                string deadLine = string.Format(LocaleManager.Get("team_teammate_dead"),
+                    LocaleManager.Get("team_teammate_color_dead"),
+                    prefix,
+                    name,
+                    LocaleManager.Get("team_teammate_dead_tag"));//$"<b>{prefix} {name}</b> - <color=#ff4444><b>[DEAD/LOST]</b></color>";
                 HUDManager.DrawShadowLabel(new Rect(x, y, width, lh), deadLine, defaultColor, style);
                 y += lh;
                 return;
@@ -197,25 +201,63 @@ namespace EFTBallisticCalculator.HUD
             float totalHp = healthCtrl.GetBodyPartHealth(EBodyPart.Common).Current;
             float maxHp = healthCtrl.GetBodyPartHealth(EBodyPart.Common).Maximum;
 
-            // 【网络同步兜底】：如果其他玩家没有这些数据，显示 ?? 而不是报错
-            string hydStr = healthCtrl != null ? healthCtrl.Hydration.Current.ToString("F0") : "??";
-            string engStr = healthCtrl != null ? healthCtrl.Energy.Current.ToString("F0") : "??";
-            string weightStr = physCtrl?.IobserverToPlayerBridge_0 != null ? physCtrl.IobserverToPlayerBridge_0.TotalWeight.ToString("F1") : "??";
+            var level = player?.Profile?.Info?.Level ?? 0;
 
+            // 【网络同步兜底】：如果其他玩家没有这些数据，显示 ?? 而不是报错
+            float hydr = healthCtrl != null ? healthCtrl.Hydration.Current : 0f;
+            float hydrmax = healthCtrl != null ? healthCtrl.Hydration.Maximum : 100f;
+            float energy = healthCtrl != null ? healthCtrl.Energy.Current : 0f;
+            float energymax = healthCtrl != null ? healthCtrl.Energy.Maximum : 100f;
+            float weight = physCtrl?.IobserverToPlayerBridge_0 != null ? physCtrl.IobserverToPlayerBridge_0.TotalWeight : 0f;
+            float overWeight = physCtrl?.BaseOverweightLimits.x ?? 1f;
+            float maxWeight = physCtrl?.BaseOverweightLimits.y ?? 2f;
+            float weightLimit = weight >= overWeight ? maxWeight : overWeight;
+            string weightColor = weight < overWeight ? LocaleManager.Get("health_endur_normal_weight_color") : weight >= overWeight ? LocaleManager.Get("health_endur_over_weight_color") : LocaleManager.Get("health_endur_critical_weight_color");
             // 状态颜色判定
-            string hpColor = (maxHp > 0 && (totalHp / maxHp) < 0.3f) ? "#ffaa00" : "#ffffff";
+            //string hpColor = (maxHp > 0 && (totalHp / maxHp) < 0.3f) ? "#ffaa00" : "#ffffff";
+
+            var side = GetPlayerSide(player);
 
             // 第一行：[ALLY] Name (350/440) Alive
-            string mainLine = $"<b>{prefix} {name}</b> - <color={hpColor}>({totalHp:F0}/{maxHp:F0})</color> <color=#55ff55>[ALIVE]</color>";
+            string mainLine = string.Format(LocaleManager.Get("team_teammate_alive"),
+                LocaleManager.Get($"team_teammate_color_{side}"),
+                prefix,
+                name,
+                side !=0 ? string.Format(LocaleManager.Get("team_teammate_level"), level) : "",
+                LocaleManager.Get($"health_bio_hp_color_{HealthPanel.HealthStatusLow(totalHp, maxHp)}"),
+                totalHp,
+                maxHp,
+                LocaleManager.Get("team_teammate_alive_tag"));//$"<b>{prefix} {name}</b> - <color={hpColor}>({totalHp:F0}/{maxHp:F0})</color> <color=#55ff55>[ALIVE]</color>";
             HUDManager.DrawShadowLabel(new Rect(x, y, width, lh), mainLine, defaultColor, style);
             y += lh;
 
-            // 第二行：缩进显示吃喝与负重
-            string subLine = $"  └ W: {weightStr}kg | H: {hydStr} | E: {engStr}";
-            HUDManager.DrawShadowLabel(new Rect(x, y, width, lh), subLine, defaultColor, style);
-            y += lh;
+            //过滤自己
+            if (!player.IsYourPlayer)
+            {
+                // 第二行：缩进显示吃喝与负重
+                string subLine = string.Format(LocaleManager.Get("team_teammate_status"),
+                    weightColor,
+                    weight,
+                    LocaleManager.Get($"health_bio_hydr_color_{HealthPanel.HealthStatusLow(hydr, hydrmax)}"),
+                    hydr,
+                    LocaleManager.Get($"health_bio_energy_color_{HealthPanel.HealthStatusLow(energy, energymax)}"),
+                    energy);//$"  └ W: {weight}kg | H: {hydr} | E: {energy}";
+                HUDManager.DrawShadowLabel(new Rect(x, y, width, lh), subLine, defaultColor, style);
+                y += lh;
+            }
 
             y += 4f; // 队员间隙
+        }
+        private static int GetPlayerSide(Player player)
+        {
+            if (player == null) return 0;
+            switch (player?.Profile?.Info?.Side.ToString() ?? "")
+            {
+                case "Savage": return 0;
+                case "Bear": return 1;
+                case "Usec": return 2;
+            }
+            return 0;
         }
         private static string GetLatinName(string nickname)
         {
