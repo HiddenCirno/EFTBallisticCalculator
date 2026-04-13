@@ -130,6 +130,22 @@
         "cfg_hud_shdw_ofst_y_name": "Shadow Y Offset",
         "cfg_hud_shdw_ofst_y_desc": "Vertical pixel offset for text shadows.",
         "cfg_hud_pure_ui_name": "Pure Mode",
-        "cfg_hud_pure_ui_desc": "Strip all native warning colors (red/orange/green) and force a strict monochrome HUD."
+        "cfg_hud_pure_ui_desc": "Strip all native warning colors (red/orange/green) and force a strict monochrome HUD.",
+        "cfg_hotkey_draw_name": "Toggle Global HUD",
+        "cfg_hotkey_draw_desc": "Hotkey to quickly show or hide the entire tactical HUD overlay.",
+        "cfg_hud_draw_ui_name": "Enable Global HUD",
+        "cfg_hud_draw_ui_desc": "Master switch to enable or disable the entire HUD rendering.",
+        "cfg_buff_rect_name": "Panel Width",
+        "cfg_buff_rect_desc": "Horizontal width constraint for the Active Buff panel.",
+        "cfg_env_rect_name": "Panel Width",
+        "cfg_env_rect_desc": "Horizontal width constraint for the Environment panel.",
+        "cfg_fcs_rect_name": "Panel Width",
+        "cfg_fcs_rect_desc": "Horizontal width constraint for the FCS panel.",
+        "cfg_health_rect_name": "Panel Width",
+        "cfg_health_rect_desc": "Horizontal width constraint for the Biometric Health panel.",
+        "cfg_throw_rect_name": "Panel Width",
+        "cfg_throw_rect_desc": "Horizontal width constraint for the Throwable ordnance panel.",
+        "cfg_team_rect_name": "Panel Width",
+        "cfg_team_rect_desc": "Horizontal width constraint for the Squad Biometrics panel."
     }
 }
