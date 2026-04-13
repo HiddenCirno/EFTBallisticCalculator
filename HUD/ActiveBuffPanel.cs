@@ -84,7 +84,7 @@ namespace EFTBallisticCalculator.HUD
                     displayTime = Mathf.Max(0f, displayTime - elapsedSinceScan);
                 }
 
-                string timeStr = displayTime > 0 ? LocaleManager.Get("health_buff_time") : "";
+                string timeStr = displayTime > 0 ? string.Format(LocaleManager.Get("health_buff_time"), displayTime) : "";
                 string valueStr = buff.Strength != 0 ? $" {(buff.Strength > 0 ? "+" : "")}{buff.Strength:G3}" : "";
                 string display = $"{buff.Name}{valueStr} {timeStr}";
 

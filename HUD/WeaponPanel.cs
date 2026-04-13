@@ -100,19 +100,19 @@ namespace EFTBallisticCalculator.HUD
             // 核心数据提取
             // ==========================================
             string weaponName = weapon.Name.Localized();
-            string fireMode = weapon.SelectedFireMode.ToString().ToUpper();
+            string fireMode = weapon.SelectedFireMode.ToString().Localized();
 
             float dur = weapon.Repairable?.Durability ?? 100f;
             float maxDur = weapon.Repairable?.MaxDurability ?? 100f;
-            string durColor = (dur / maxDur) < 0.5f ? "#ff4444" : "#ffffff";
+            //string durColor = (dur / maxDur) < 0.5f ? "#ff4444" : "#ffffff";
 
             string moa = moaAttr.StringValue();
             float ergo = weapon.ErgonomicsTotal;
             float recoilUp = float.Parse(recoilAttr.StringValue());
             float recoilBack = float.Parse(recoilbackAttr.StringValue());
 
-            string chamberAmmoName = "EMPTY";
-            string nextAmmoName = "EMPTY";
+            string chamberAmmoName = LocaleManager.Get("weapon_no_ammo");
+            string nextAmmoName = LocaleManager.Get("weapon_no_ammo");
             int currentMagCount = 0;
             int maxMagCount = 0;
 
@@ -137,13 +137,30 @@ namespace EFTBallisticCalculator.HUD
             // ==========================================
             // 文本组装
             // ==========================================
-            string nameLine = $"<b>[ {weaponName} ]</b>";
-            string statLine = $"DUR: <color={durColor}>{dur:F1}</color>  |  ERGO: {ergo:F1}  |  REC: {recoilUp:F0}/{recoilBack:F0}  |  MOA: {moa}";
+            string nameLine = string.Format(LocaleManager.Get("weapon_name"), weaponName);//$"<b>[ {weaponName} ]</b>";
+            string statLine = string.Format(
+                LocaleManager.Get("weapon_state"),
+                LocaleManager.Get($"weapon_dur_color_{GetWeaponDurStatus(dur, maxDur)}"),
+                dur,
+                maxDur,
+                ergo,
+                recoilUp,
+                recoilBack,
+                moa);//$"DUR: <color={durColor}>{dur:F1}</color>  |  ERGO: {ergo:F1}  |  REC: {recoilUp:F0}/{recoilBack:F0}  |  MOA: {moa}";
 
-            string chamberColor = chamberAmmoName == "EMPTY" ? "#ff4444" : "#55ff55";
-            string magColor = currentMagCount == 0 ? "#ff4444" : (currentMagCount <= maxMagCount * 0.3f ? "#ffaa00" : "#ffffff");
-            string ammoCountStr = mag != null ? $"MAG: <color={magColor}>{currentMagCount}/{maxMagCount}</color>" : "MAG: --/--";
-            string ammoLine = $"MODE: <color=#ffaa00>{fireMode}</color>   ||   {ammoCountStr}   |   CHBR: <color={chamberColor}>{chamberAmmoName}</color>  >>  NXT: {nextAmmoName}";
+            //string chamberColor = chamberAmmoName == "EMPTY" ? "#ff4444" : "#55ff55";
+            //string magColor = currentMagCount == 0 ? "#ff4444" : (currentMagCount <= maxMagCount * 0.3f ? "#ffaa00" : "#ffffff");
+            string ammoCountStr = mag != null ?
+                string.Format(LocaleManager.Get("weapon_mag"),
+                LocaleManager.Get($"weapon_mag_color_{GetWeaponMagStatus(currentMagCount, maxMagCount)}"),
+                currentMagCount,
+                maxMagCount) :
+                LocaleManager.Get("weapon_mag_empty");//$"MAG: <color={magColor}>{currentMagCount}/{maxMagCount}</color>" : "MAG: --/--";
+            string ammoLine = string.Format(LocaleManager.Get("weapon_ammo"),
+                fireMode,
+                ammoCountStr,
+                chamberAmmoName,
+                nextAmmoName);//$"MODE: <color=#ffaa00>{fireMode}</color>   ||   {ammoCountStr}   |   CHBR: <color={chamberColor}>{chamberAmmoName}</color>  >>  NXT: {nextAmmoName}";
 
             // ==========================================
             // 【核心】：动态计算这段文字在屏幕上的实际宽度
@@ -170,13 +187,35 @@ namespace EFTBallisticCalculator.HUD
             currentY += nameHeight;
 
             float statHeight = 24f * finalScale;
-            HUDManager.DrawShadowLabel(new Rect(0, currentY, screenW, statHeight), statLine, new Color(0.8f, 0.8f, 0.8f, 0.9f), statStyle);
+            HUDManager.DrawShadowLabel(new Rect(0, currentY, screenW, statHeight), statLine, mainColor, statStyle);
             currentY += statHeight;
 
             float ammoHeight = 26f * finalScale;
             HUDManager.DrawShadowLabel(new Rect(0, currentY, screenW, ammoHeight), ammoLine, mainColor, ammoStyle);
 
             return leftBoundX; // 吐出左边界给投掷物面板
+        }
+        public static int GetWeaponDurStatus(float current, float max)
+        {
+            if (max <= 0f) return 0; // 防呆：防止除以 0
+
+            float ratio = current / max;
+
+            if (ratio <= 0.25f) return 0;       // 极低
+            if (ratio <= 0.60f) return 1;       // 较低
+            if (ratio <= 0.80f) return 2;       // 较低
+            if (ratio <= 0.90f) return 3;       // 较低
+            return 4;                           // 健康
+        }
+        public static int GetWeaponMagStatus(float current, float max)
+        {
+            if (max <= 0f) return 0; // 防呆：防止除以 0
+
+            float ratio = current / max;
+
+            if (ratio <= 0.2f) return 0;
+            if (ratio <= 0.5f) return 1;  
+            return 2;                           
         }
     }
 }

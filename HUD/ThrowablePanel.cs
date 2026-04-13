@@ -132,13 +132,13 @@ namespace EFTBallisticCalculator.HUD
             GUIStyle nadeStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = (int)(13 * finalScale), alignment = anchor };
             UnityEngine.Color mainColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : HUDManager.UIColorOverride.Value ? HUDManager.OverrideColor.Value : Color.Value;
 
-            HUDManager.DrawShadowLabel(drawRect, "--- ORDNANCE ---", new UnityEngine.Color(0.5f, 0.5f, 0.5f, 0.5f), nadeStyle);
+            HUDManager.DrawShadowLabel(drawRect, LocaleManager.Get("grenade_title"), mainColor, nadeStyle);
             currentY += lh;
             drawRect.y = currentY;
 
             foreach (var nade in _throwablesCache)
             {
-                string line = $"{nade.Name}  <color=#ffffff>x{nade.Count}</color>";
+                string line = string.Format(LocaleManager.Get("grenade_text"), nade.Name, nade.Count);//$"{nade.Name}  <color=#ffffff>x{nade.Count}</color>";
                 HUDManager.DrawShadowLabel(drawRect, line, mainColor, nadeStyle);
 
                 currentY += lh;
