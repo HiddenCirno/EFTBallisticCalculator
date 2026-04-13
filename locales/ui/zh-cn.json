@@ -124,6 +124,6 @@
         "weapon_mag_color_2": "#FFFFFF",
         "weapon_ammo": "射击模式 : <color=#FFAA00>{0}</color> | {1} | 枪膛 : <color=#55FF55>{2}</color> >> 下一发弹药 : {3}",
         "team_teammate_color_loading": "#FFFF00",
-        "team_teammate_loading_tag": "<color=#ffaa00>[同步中…]</color>"
+        "team_teammate_loading_tag": "<b><color=#FFFF00>[同步中…]</color></b>"
     }
 }
