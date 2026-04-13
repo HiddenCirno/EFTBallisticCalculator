@@ -37,5 +37,10 @@
 - 如果准星瞄准的位置无法成为目标（如天空），将会清除距离数据。
 - 按下Backspace键也可以手动清除火控数据。
 - 通过Ctrl、Alt或Shift键和上下方向键，可以手动输入距离数据或对当前数据进行校准修正。
+- 落点预判在关闭所有HUD的情况下仍然可见，但我没有设置单独的距离显示，为了准确判断距离，我建议你至少保留火控计算机面板。
 
+**特别鸣谢**
 
+koloskovnick和他的MedEffectsHUD，我参考了用于获取和更新Buff效果的代码，原项目使用MIT协议，故在次列出。
+
+[MedEffectsHUD](https://github.com/KoloskovNikolay/MedEffectsHUD)

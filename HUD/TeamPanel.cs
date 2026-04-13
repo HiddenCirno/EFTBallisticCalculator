@@ -25,7 +25,7 @@ namespace EFTBallisticCalculator.HUD
             public Player PlayerRef;
             public bool IsDead;
         }
-        private static bool _isDebugMode = true; // 测试完毕后改成 false 即可
+        private static bool _isDebugMode = false; // 测试完毕后改成 false 即可
         private static int _debugTargetCount = 4; // 抓几个倒霉蛋当队友？
         private static HashSet<string> _debugFakeTeammates = new HashSet<string>();
         private static readonly Dictionary<string, TeammateRecord> _roster = new Dictionary<string, TeammateRecord>();
