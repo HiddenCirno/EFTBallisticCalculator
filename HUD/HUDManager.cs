@@ -34,6 +34,7 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<float> ShadowOffsetX;
         public static ConfigEntry<float> ShadowOffsetY;
         public static ConfigEntry<bool> PureMode;
+        public static ConfigEntry<bool> DrawGlobal;
 
         private static readonly Regex _colorRegex = new Regex(@"<color[^>]*>|</color>", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
@@ -132,6 +133,9 @@ namespace EFTBallisticCalculator.HUD
             PureMode = config.Bind("HUD Visuals / 视觉效果", "纯净模式", false,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_hud_pure_ui_desc"), null,
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_pure_ui_name"), IsAdvanced = true }));
+            DrawGlobal = config.Bind("HUD Visuals / 视觉效果", "信息面板总开关", true,
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hud_draw_ui_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hud_draw_ui_name") }));
 
             // ==================== 初始化子面板 ====================
             FCSPanel.InitCfg(config);
@@ -155,7 +159,7 @@ namespace EFTBallisticCalculator.HUD
 
         public static void DrawGUI()
         {
-            if (Camera.main == null || PluginsCore.CorrectPlayer == null) return;
+            if (Camera.main == null || PluginsCore.CorrectPlayer == null || !DrawGlobal.Value) return;
 
             bool hasWeapon = PluginsCore.CorrectPlayer.HandsController as EFT.Player.FirearmController != null;
             UpdateRainbowColor();
@@ -224,7 +228,8 @@ namespace EFTBallisticCalculator.HUD
             // ==========================================
             if (hasWeapon && PluginsCore._lockedHorizontalDist > 0f)
             {
-                DrawCenterMarker();
+                //这个准星还是不要了
+                //DrawCenterMarker();
             }
         }
 

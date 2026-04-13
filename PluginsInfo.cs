@@ -7,7 +7,7 @@ namespace EFTBallisticCalculator
     public class PluginsInfo
     {
         public const string GUID = "eft.hiddenhiraigi.ballisticcalculator";
-        public const string NAME = "EFTBallisticCalculator";
+        public const string NAME = "Modern Tac HUD";
         public const string VERSION = "1.0.0";
     }
 }

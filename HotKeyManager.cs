@@ -8,8 +8,7 @@ namespace EFTBallisticCalculator.Core
 {
     public static class HotKeyManager
     {
-        public static ConfigEntry<KeyboardShortcut> KeyFcsPannel;
-        public static ConfigEntry<KeyboardShortcut> KeyEnvPannel;
+        public static ConfigEntry<KeyboardShortcut> KeyGlobalDraw;
         public static ConfigEntry<KeyboardShortcut> KeyFcsClear;
         public static ConfigEntry<KeyboardShortcut> KeyFcsTrack;
 
@@ -23,13 +22,9 @@ namespace EFTBallisticCalculator.Core
         public static void Init(ConfigFile config)
         {
             // --- 1. Controls ---
-            KeyFcsPannel = config.Bind("Controls / 控制", "显示火控数据", new KeyboardShortcut(KeyCode.KeypadDivide),
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_fcs_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_fcs_name") }));
-
-            KeyEnvPannel = config.Bind("Controls / 控制", "显示环境数据", new KeyboardShortcut(KeyCode.KeypadPlus),
-                new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_env_desc"), null,
-                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_env_name") }));
+            KeyGlobalDraw = config.Bind("Controls / 控制", "绘制总开关", new KeyboardShortcut(KeyCode.KeypadMinus),
+                new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_draw_desc"), null,
+                new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_hotkey_draw_name") }));
 
             KeyFcsClear = config.Bind("Controls / 控制", "解除锁定", new KeyboardShortcut(KeyCode.Backspace),
                 new ConfigDescription(CfgLocaleManager.Get("cfg_hotkey_clear_desc"), null,
@@ -78,9 +73,9 @@ namespace EFTBallisticCalculator.Core
         }
         public static void ListenToHotKeyInput()
         {
-            // 2. 集中处理按键状态
-            if (KeyEnvPannel.Value.IsDown()) EnvPanel.Active.Value = !EnvPanel.Active.Value;
-            if (KeyFcsPannel.Value.IsDown()) FCSPanel.Active.Value = !FCSPanel.Active.Value;
+            // 2. 
+            //if (KeyEnvPannel.Value.IsDown()) EnvPanel.Active.Value = !EnvPanel.Active.Value;
+            if (KeyGlobalDraw.Value.IsDown()) HUDManager.DrawGlobal.Value = !HUDManager.DrawGlobal.Value;
 
             if (KeyFcsTrack.Value.IsDown())
             {

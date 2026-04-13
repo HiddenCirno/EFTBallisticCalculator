@@ -21,7 +21,7 @@
         "fcs_lbl_mass": "弹头重量 : {0}",
         "fcs_lbl_sys": "系统状态 : {0} | {1}",
         "fcs_val_heading": "{0:000}° [{1}]",
-        "fcs_val_range": "{0:F1} 米",
+        "fcs_val_range": "<color=#FFFF00>{0:F1} 米</color>",
         "fcs_val_angle": "{0:-0.0;+0.0;0.0}°",
         "fcs_val_tof": "{0:F3} 秒",
         "fcs_val_speed": "{0:F1} 米/秒",

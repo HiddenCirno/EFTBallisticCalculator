@@ -21,7 +21,7 @@
         "fcs_lbl_mass": "PROJ MASS : {0}",
         "fcs_lbl_sys": "SYSTEM    : {0} | {1}",
         "fcs_val_heading": "{0:000}° [{1}]",
-        "fcs_val_range": "{0:F1} M",
+        "fcs_val_range": "<color=#FFFF00>{0:F1} M</color>",
         "fcs_val_angle": "{0:-0.0;+0.0;0.0}°",
         "fcs_val_tof": "{0:F3} SEC",
         "fcs_val_speed": "{0:F1} M/S",
