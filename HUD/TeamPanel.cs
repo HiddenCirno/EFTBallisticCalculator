@@ -31,7 +31,8 @@ namespace EFTBallisticCalculator.HUD
             public string AccountId;
             public string Name;
             public Player PlayerRef;
-            public ETeammateStatus Status = ETeammateStatus.Alive;
+            public ETeammateStatus Status = ETeammateStatus.Alive; 
+            public int FikaNetId = -1;
         }
 
         private static EFT.GameWorld _lastGameWorld = null;
@@ -84,7 +85,17 @@ namespace EFTBallisticCalculator.HUD
 
         private static void UpdateRoster()
         {
-            if (Time.time - _lastScanTime < 2f) return;
+            bool forceUpdate = false;
+            foreach (var r in _roster.Values)
+            {
+                if (r.Status == ETeammateStatus.Alive && (r.PlayerRef == null || r.PlayerRef.HealthController == null))
+                {
+                    forceUpdate = true;
+                    break;
+                }
+            }
+
+            if (!forceUpdate && Time.time - _lastScanTime < 2f) return;
             _lastScanTime = Time.time;
 
             var gw = PluginsCore.CorrectGameWorld;
@@ -94,6 +105,10 @@ namespace EFTBallisticCalculator.HUD
                 _roster.Clear();
                 _debugFakeTeammates.Clear();
                 _lastGameWorld = gw;
+                if (_isFikaLoaded)
+                {
+                    SafeClearFikaCache();
+                }
             }
             string myGroupId = PluginsCore.CorrectGroupId;
 
@@ -147,7 +162,7 @@ namespace EFTBallisticCalculator.HUD
                     record.PlayerRef = player;
 
                     // 原版死亡判定：血条归零
-                    if (player.ActiveHealthController != null && !player.ActiveHealthController.IsAlive)
+                    if (player.HealthController != null && !player.HealthController.IsAlive)
                     {
                         record.Status = ETeammateStatus.Dead;
                     }
@@ -244,7 +259,7 @@ namespace EFTBallisticCalculator.HUD
             }
 
             // Fika 联机同步中 (移除了 player.Physical == null 的判断)
-            if (player == null || player.ActiveHealthController == null)
+            if (player == null || player.HealthController == null)
             {
                 string syncLine = string.Format(LocaleManager.Get("team_teammate_dead"),
                     LocaleManager.Get("team_teammate_color_loading"),
@@ -256,7 +271,7 @@ namespace EFTBallisticCalculator.HUD
                 return;
             }
 
-            var healthCtrl = player.ActiveHealthController;
+            var healthCtrl = player.HealthController;
 
             // 存活状态：计算总血量
             float totalHp = healthCtrl.GetBodyPartHealth(EBodyPart.Common).Current;
@@ -264,19 +279,30 @@ namespace EFTBallisticCalculator.HUD
             var level = player?.Profile?.Info?.Level ?? 0;
 
             // 吃喝数据抓取 (原版 try，Fika 兜底)
+            // --- 吃喝数据终极抓取逻辑 ---
             float hydr = 0f, hydrmax = 100f, energy = 0f, energymax = 100f;
-            try
+
+            //Fika数据
+            if (_isFikaLoaded)
             {
-                hydr = healthCtrl.Hydration.Current;
-                hydrmax = healthCtrl.Hydration.Maximum;
-                energy = healthCtrl.Energy.Current;
-                energymax = healthCtrl.Energy.Maximum;
-            }
-            catch
-            {
-                // 如果原版属性报错 (Fika 的 ObservedHealthController 隐藏了这些)，走专门的抓取通道
                 SafeCallFikaStats(healthCtrl, out hydr, out hydrmax, out energy, out energymax);
             }
+
+            //fallback到原版
+            if (!_isFikaLoaded || hydrmax <= 0f || energymax <= 0f)
+            {
+                try
+                {
+                    hydr = healthCtrl.Hydration.Current;
+                    hydrmax = healthCtrl.Hydration.Maximum;
+                    energy = healthCtrl.Energy.Current;
+                    energymax = healthCtrl.Energy.Maximum;
+                }
+                catch { }
+            }
+            //保底
+            if (hydrmax <= 0f) { hydr = 0f; hydrmax = 100f; }
+            if (energymax <= 0f) { energy = 0f; energymax = 100f; }
 
             var side = GetPlayerSide(player);
 
@@ -368,6 +394,11 @@ namespace EFTBallisticCalculator.HUD
         private static void SafeCallFikaStats(IHealthController healthCtrl, out float hydr, out float hydrmax, out float energy, out float energymax)
         {
             FikaIntegration.TryGetFikaStats(healthCtrl, out hydr, out hydrmax, out energy, out energymax);
+        }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SafeClearFikaCache()
+        {
+            FikaIntegration.ClearCache();
         }
     }
 }
