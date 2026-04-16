@@ -99,6 +99,8 @@
         "team_ally": "[ALLY]",
         "team_teammate_alive_tag": "<color=#55ff55>[ALIVE]</color>",
         "team_teammate_dead_tag": "<color=#BA0303><b>[DEAD/LOST]</b></color>",
+        "team_teammate_extracted_tag": "<color=#8DFF11><b>[EXTRACTED]</b></color>",
+        "team_teammate_loading_tag": "<b><color=#FFFF00>[SYNCING]</color></b>",
         "team_teammate_color_0": "#FFFF8B",
         "team_teammate_color_1": "#FF8C00",
         "team_teammate_color_2": "#007CFF",
@@ -106,7 +108,7 @@
         "team_teammate_level": "<color=#7FFF00>Lv.{0}</color>",
         "team_teammate_alive": "<color={0}><b>{1} {2}</b></color> {3} (<color={4}>{5:F0}</color>/{6:F0}) {7}",
         "team_teammate_dead": "<color={0}><b>{1} {2}</b></color> {3}",
-        "team_teammate_status": " └ W : <color={0}>{1:F1} kg</color> | H : <color={2}>{3:F0}</color> | E : <color={4}>{5:F0}</color>",
+        "team_teammate_status": " └ H : <color={0}>{1:F0}</color> | E : <color={2}>{3:F0}</color>",
         "grenade_title": "--- GRENADE ---",
         "grenade_text": "{0}  <color=#FFFFFF>x{1}</color>",
         "weapon_name": "<b>[ {0} ]</b>",
@@ -123,7 +125,6 @@
         "weapon_mag_color_1": "#FFFF00",
         "weapon_mag_color_2": "#FFFFFF",
         "weapon_ammo": "MODE : <color=#FFAA00>{0}</color> | {1} | CHBR : <color=#55FF55>{2}</color> >> NXT : {3}",
-        "team_teammate_color_loading": "#FFFF00",
-        "team_teammate_loading_tag": "<b><color=#FFFF00>[SYNCING]</color></b>"
+        "team_teammate_color_loading": "#FFFF00"
     }
 }

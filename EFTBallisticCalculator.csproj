@@ -13,6 +13,10 @@
 			<HintPath>I:\TKF\EscapeFromTarkov_Data\Managed\Comfort.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+		<Reference Include="Fika.Core">
+		  <HintPath>I:\TKF\BepInEx\plugins\Fika\Fika.Core.dll</HintPath>
+		  <Private>False</Private>
+		</Reference>
 		<Reference Include="I:\TKF\BepInEx\core\0Harmony.dll">
 			<Private>False</Private>
 		</Reference>

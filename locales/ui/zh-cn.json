@@ -86,7 +86,7 @@
         "health_endur_normal_weight_color": "#B3B6B6",
         "health_endur_over_weight_color": "#D4A42E",
         "health_endur_critical_weight_color": "#BA0303",
-        "health_endur_oxygen": "氧气 : <color={0}>{1:F1}</color>/{2:F1} ({3:F0}%)",
+        "health_endur_oxygen": "氧气 : <color={0}>{1:F1}</color> / {2:F1} ({3:F0}%)",
         "health_endur_oxygen_color": "#376398",
         "health_endur_upper_stam": "手臂耐力 : <color={0}>{1:F1}</color> / {2:F1} ({3:F0}%)",
         "health_endur_upper_stam_color": "#318598",
@@ -99,6 +99,8 @@
         "team_ally": "[队友]",
         "team_teammate_alive_tag": "<color=#55ff55>[存活]</color>",
         "team_teammate_dead_tag": "<color=#BA0303><b>[死亡]</b></color>",
+        "team_teammate_extracted_tag": "<color=#8DFF11><b>[已撤离]</b></color>",
+        "team_teammate_loading_tag": "<b><color=#FFFF00>[同步中…]</color></b>",
         "team_teammate_color_0": "#FFFF8B",
         "team_teammate_color_1": "#FF8C00",
         "team_teammate_color_2": "#007CFF",
@@ -106,7 +108,7 @@
         "team_teammate_level": "<color=#7FFF00>{0}级</color>",
         "team_teammate_alive": "<color={0}><b>{1} {2}</b></color> {3} (<color={4}>{5:F0}</color>/{6:F0}) {7}",
         "team_teammate_dead": "<color={0}><b>{1} {2}</b></color> {3}",
-        "team_teammate_status": " └ 负重 : <color={0}>{1:F1} 公斤</color> | 水分 : <color={2}>{3:F0}</color> | 能量 : <color={4}>{5:F0}</color>",
+        "team_teammate_status": " └ 水分 : <color={0}>{1:F0}</color> | 能量 : <color={2}>{3:F0}</color>",
         "grenade_title": "--- 可用投掷物 ---",
         "grenade_text": "{0}  <color=#FFFFFF>x{1}</color>",
         "weapon_name": "<b>[ {0} ]</b>",
@@ -123,7 +125,6 @@
         "weapon_mag_color_1": "#FFFF00",
         "weapon_mag_color_2": "#FFFFFF",
         "weapon_ammo": "射击模式 : <color=#FFAA00>{0}</color> | {1} | 枪膛 : <color=#55FF55>{2}</color> >> 下一发弹药 : {3}",
-        "team_teammate_color_loading": "#FFFF00",
-        "team_teammate_loading_tag": "<b><color=#FFFF00>[同步中…]</color></b>"
+        "team_teammate_color_loading": "#FFFF00"
     }
 }

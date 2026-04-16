@@ -12,6 +12,7 @@ using UnityEngine;
 namespace EFTBallisticCalculator
 {
     [BepInPlugin(PluginsInfo.GUID, PluginsInfo.NAME, PluginsInfo.VERSION)]
+    [BepInDependency("com.fika.core", BepInDependency.DependencyFlags.SoftDependency)]
     public class PluginsCore : BaseUnityPlugin
     {
         public static string dllPath = Assembly.GetExecutingAssembly().Location;

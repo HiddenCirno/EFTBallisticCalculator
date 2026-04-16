@@ -1,12 +1,21 @@
-﻿using BepInEx.Configuration;
+﻿using BepInEx.Bootstrap;
+using BepInEx.Configuration;
 using EFT;
+using EFT.HealthSystem;
 using EFTBallisticCalculator.Locale;
-using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace EFTBallisticCalculator.HUD
 {
+    public enum ETeammateStatus
+    {
+        Alive,
+        Dead,
+        Extracted
+    }
+
     public static class TeamPanel
     {
         public static ConfigEntry<float> OffsetX;
@@ -16,24 +25,31 @@ namespace EFTBallisticCalculator.HUD
         public static ConfigEntry<bool> Active;
         public static ConfigEntry<Color> Color;
 
-        // 花名册数据结构：用于持久化保存队友信息，即使 Player 实体被销毁也不丢失
-        // 花名册数据结构
-        private class TeammateRecord
+        // 【修改为 public】：让 FikaIntegration 工具类可以修改状态
+        public class TeammateRecord
         {
             public string AccountId;
             public string Name;
             public Player PlayerRef;
-            public bool IsDead;
+            public ETeammateStatus Status = ETeammateStatus.Alive;
         }
+
         private static EFT.GameWorld _lastGameWorld = null;
-        private static bool _isDebugMode = false; // 测试完毕后改成 false 即可
-        private static int _debugTargetCount = 4; // 抓几个倒霉蛋当队友？
+        private static bool _isDebugMode = false;
+        private static int _debugTargetCount = 4;
         private static HashSet<string> _debugFakeTeammates = new HashSet<string>();
-        private static readonly Dictionary<string, TeammateRecord> _roster = new Dictionary<string, TeammateRecord>();
+
+        // 【修改为 public】：让 FikaIntegration 工具类可以遍历
+        public static readonly Dictionary<string, TeammateRecord> _roster = new Dictionary<string, TeammateRecord>();
         private static float _lastScanTime = 0f;
+
+        // Fika 软依赖检测
+        private static bool _isFikaLoaded = false;
+        private const string FIKA_GUID = "com.fika.core";
 
         public static void InitCfg(ConfigFile config)
         {
+            // ... (原有的 Bind 代码保持完全不变) ...
             OffsetX = config.Bind("Team Panel / 队伍数据", "X轴偏移", -50f,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_team_x_desc"),
                 new AcceptableValueRange<float>(-1920f, 1920f),
@@ -61,9 +77,11 @@ namespace EFTBallisticCalculator.HUD
                 new ConfigDescription(CfgLocaleManager.Get("cfg_team_rect_desc"),
                 new AcceptableValueRange<float>(0f, 800f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_team_rect_name"), IsAdvanced = true }));
+
+            // 检测 Fika 是否安装
+            _isFikaLoaded = Chainloader.PluginInfos.ContainsKey(FIKA_GUID);
         }
 
-        // 维护队伍花名册 (每 2 秒扫描一次以节省性能)
         private static void UpdateRoster()
         {
             if (Time.time - _lastScanTime < 2f) return;
@@ -71,7 +89,6 @@ namespace EFTBallisticCalculator.HUD
 
             var gw = PluginsCore.CorrectGameWorld;
 
-            // 【核心修复 1】：自动检测新战局并清空残留的队伍数据
             if (gw != null && gw != _lastGameWorld)
             {
                 _roster.Clear();
@@ -84,13 +101,13 @@ namespace EFTBallisticCalculator.HUD
 
             HashSet<string> aliveProfileIds = new HashSet<string>();
 
+            // 1. 扫描当前存活列表，更新或添加队友
             foreach (var player in gw.AllAlivePlayersList)
             {
                 if (player == null || player == PluginsCore.CorrectPlayer) continue;
 
                 bool isTeammate = false;
 
-                // 核心劫持逻辑
                 if (_isDebugMode)
                 {
                     string profileId = player.Profile?.Id;
@@ -117,40 +134,48 @@ namespace EFTBallisticCalculator.HUD
 
                     if (!_roster.TryGetValue(profileId, out var record))
                     {
-                        // 【引入西里尔字母转换】：获取拼音化的干净名字
                         string safeName = GetLatinName(player.Profile.Info.Nickname);
-
                         record = new TeammateRecord
                         {
                             AccountId = profileId,
-                            Name = _isDebugMode ? $"[TEST] {safeName}" : safeName
+                            Name = _isDebugMode ? $"[TEST] {safeName}" : safeName,
+                            Status = ETeammateStatus.Alive
                         };
                         _roster[profileId] = record;
                     }
 
                     record.PlayerRef = player;
+
+                    // 原版死亡判定：血条归零
                     if (player.ActiveHealthController != null && !player.ActiveHealthController.IsAlive)
                     {
-                        record.IsDead = true;
+                        record.Status = ETeammateStatus.Dead;
                     }
                 }
             }
 
+            // 2. 将控制权交给 FikaIntegration 去精准判定撤离状态
+            if (_isFikaLoaded)
+            {
+                SafeCallFikaUpdate();
+            }
+
+            // 3. 兜底消失判定 (防断线/异常丢失)
             foreach (var kvp in _roster)
             {
-                if (!aliveProfileIds.Contains(kvp.Key))
+                var record = kvp.Value;
+                if (record.Status == ETeammateStatus.Alive && !aliveProfileIds.Contains(record.AccountId))
                 {
-                    kvp.Value.IsDead = true;
+                    // 既没有血条归零，又没在 Fika 的撤离列表里，人却没了，按失踪(死亡)处理
+                    record.Status = ETeammateStatus.Dead;
                 }
             }
         }
 
-        // 注意：这里的 anchorRightX 接收的是 HealthPanel 传出的最左侧边界
-        // 参数改为接收起点的 startX 和 startY
         public static float Draw(float startX, float startY, float globalScale)
         {
-            // 如果没开启，或者没有队伍，直接原样返回 startY，高度无变化
-            if (!Active.Value || PluginsCore.CorrectPlayer == null) return startY;
+            // 【核心拦截】：没开面板，或者没加载 Fika，直接跳过绘制，变为纯联机功能！
+            if (!Active.Value || !_isFikaLoaded || PluginsCore.CorrectPlayer == null) return startY;
 
             UpdateRoster();
 
@@ -163,7 +188,6 @@ namespace EFTBallisticCalculator.HUD
             int textSize = (int)(13 * finalScale);
             float rectWidth = RectWidth.Value * finalScale;
 
-            // 动态向左靠拢，直接从 startX 加上自身的独立偏移
             float finalX = startX + OffsetX.Value;
             float finalY = startY + OffsetY.Value;
 
@@ -177,36 +201,50 @@ namespace EFTBallisticCalculator.HUD
             currentY += lh;
 
             // 1. 绘制自己 (You)
-            DrawPlayerLine(PluginsCore.CorrectPlayer.Profile?.Info?.Nickname ?? "YOU", PluginsCore.CorrectPlayer, true, !PluginsCore.CorrectPlayer?.ActiveHealthController?.IsAlive ?? false, finalX, ref currentY, rectWidth, lh, textStyle, mainColor);
+            DrawPlayerLine(PluginsCore.CorrectPlayer.Profile?.Info?.Nickname ?? "YOU", PluginsCore.CorrectPlayer, true,
+                PluginsCore.CorrectPlayer?.ActiveHealthController?.IsAlive == false ? ETeammateStatus.Dead : ETeammateStatus.Alive,
+                finalX, ref currentY, rectWidth, lh, textStyle, mainColor);
 
             // 2. 绘制花名册里的所有队友 (Teammates)
             foreach (var record in _roster.Values)
             {
-                DrawPlayerLine(record.Name, record.PlayerRef, false, record.IsDead, finalX, ref currentY, rectWidth, lh, textStyle, mainColor);
+                DrawPlayerLine(record.Name, record.PlayerRef, false, record.Status, finalX, ref currentY, rectWidth, lh, textStyle, mainColor);
             }
 
-            // 返回最终的底部 Y 坐标
-            return currentY; 
+            return currentY;
         }
 
-        private static void DrawPlayerLine(string name, Player player, bool isSelf, bool isKnownDead, float x, ref float y, float width, float lh, GUIStyle style, Color defaultColor)
+        private static void DrawPlayerLine(string name, Player player, bool isSelf, ETeammateStatus status, float x, ref float y, float width, float lh, GUIStyle style, Color defaultColor)
         {
             string prefix = isSelf ? LocaleManager.Get("team_you") : LocaleManager.Get("team_ally");
 
-            // 如果 player 引用丢失或已被标记为死亡
-            if (isKnownDead)
+            // --- 状态判定分支 ---
+            if (status == ETeammateStatus.Dead)
             {
                 string deadLine = string.Format(LocaleManager.Get("team_teammate_dead"),
-                    LocaleManager.Get("team_teammate_color_dead"),
-                    prefix,
-                    name,
-                    LocaleManager.Get("team_teammate_dead_tag"));
+                   LocaleManager.Get("team_teammate_color_dead"),
+                   prefix,
+                   name,
+                   LocaleManager.Get("team_teammate_dead_tag"));
                 HUDManager.DrawShadowLabel(new Rect(x, y, width, lh), deadLine, defaultColor, style);
                 y += lh;
                 return;
             }
-            // 2. Fika 联机同步中 (Player 对象存在，但健康/物理组件还未在客户端实例化)
-            if (player == null || player.ActiveHealthController == null || player.Physical == null)
+            else if (status == ETeammateStatus.Extracted)
+            {
+                // 撤离状态，用绿色高亮显示 (可自行去 Locale 字典里加词条，这里临时用硬编码富文本展示)
+                string extLine = string.Format(LocaleManager.Get("team_teammate_dead"),
+                   LocaleManager.Get("team_teammate_color_dead"),
+                   prefix,
+                   name,
+                   LocaleManager.Get("team_teammate_extracted_tag"));
+                HUDManager.DrawShadowLabel(new Rect(x, y, width, lh), extLine, defaultColor, style);
+                y += lh;
+                return;
+            }
+
+            // Fika 联机同步中 (移除了 player.Physical == null 的判断)
+            if (player == null || player.ActiveHealthController == null)
             {
                 string syncLine = string.Format(LocaleManager.Get("team_teammate_dead"),
                     LocaleManager.Get("team_teammate_color_loading"),
@@ -217,31 +255,31 @@ namespace EFTBallisticCalculator.HUD
                 y += lh;
                 return;
             }
+
             var healthCtrl = player.ActiveHealthController;
-            var physCtrl = player.Physical;
 
             // 存活状态：计算总血量
             float totalHp = healthCtrl.GetBodyPartHealth(EBodyPart.Common).Current;
             float maxHp = healthCtrl.GetBodyPartHealth(EBodyPart.Common).Maximum;
-
             var level = player?.Profile?.Info?.Level ?? 0;
 
-            // 【网络同步兜底】：如果其他玩家没有这些数据，显示 ?? 而不是报错
-            float hydr = healthCtrl != null ? healthCtrl.Hydration.Current : 0f;
-            float hydrmax = healthCtrl != null ? healthCtrl.Hydration.Maximum : 100f;
-            float energy = healthCtrl != null ? healthCtrl.Energy.Current : 0f;
-            float energymax = healthCtrl != null ? healthCtrl.Energy.Maximum : 100f;
-            float weight = physCtrl?.IobserverToPlayerBridge_0 != null ? physCtrl.IobserverToPlayerBridge_0.TotalWeight : 0f;
-            float overWeight = physCtrl?.BaseOverweightLimits.x ?? 1f;
-            float maxWeight = physCtrl?.BaseOverweightLimits.y ?? 2f;
-            float weightLimit = weight >= overWeight ? maxWeight : overWeight;
-            string weightColor = weight < overWeight ? LocaleManager.Get("health_endur_normal_weight_color") : weight >= overWeight ? LocaleManager.Get("health_endur_over_weight_color") : LocaleManager.Get("health_endur_critical_weight_color");
-            // 状态颜色判定
-            //string hpColor = (maxHp > 0 && (totalHp / maxHp) < 0.3f) ? "#ffaa00" : "#ffffff";
+            // 吃喝数据抓取 (原版 try，Fika 兜底)
+            float hydr = 0f, hydrmax = 100f, energy = 0f, energymax = 100f;
+            try
+            {
+                hydr = healthCtrl.Hydration.Current;
+                hydrmax = healthCtrl.Hydration.Maximum;
+                energy = healthCtrl.Energy.Current;
+                energymax = healthCtrl.Energy.Maximum;
+            }
+            catch
+            {
+                // 如果原版属性报错 (Fika 的 ObservedHealthController 隐藏了这些)，走专门的抓取通道
+                SafeCallFikaStats(healthCtrl, out hydr, out hydrmax, out energy, out energymax);
+            }
 
             var side = GetPlayerSide(player);
 
-            // 第一行：[ALLY] Name (350/440) Alive
             string mainLine = string.Format(LocaleManager.Get("team_teammate_alive"),
                 LocaleManager.Get($"team_teammate_color_{side}"),
                 prefix,
@@ -251,16 +289,15 @@ namespace EFTBallisticCalculator.HUD
                 totalHp,
                 maxHp,
                 LocaleManager.Get("team_teammate_alive_tag"));//$"<b>{prefix} {name}</b> - <color={hpColor}>({totalHp:F0}/{maxHp:F0})</color> <color=#55ff55>[ALIVE]</color>";
+
             HUDManager.DrawShadowLabel(new Rect(x, y, width, lh), mainLine, defaultColor, style);
             y += lh;
 
-            //过滤自己
+            // 过滤自己，渲染下层吃喝状态 (彻底遗弃了负重的渲染)
             if (!player.IsYourPlayer)
             {
-                // 第二行：缩进显示吃喝与负重
+                // 你可以根据需求更新 locale 词条，把负重占位符去了，这里直接写死了吃喝的排版
                 string subLine = string.Format(LocaleManager.Get("team_teammate_status"),
-                    weightColor,
-                    weight,
                     LocaleManager.Get($"health_bio_hydr_color_{HealthPanel.HealthStatusLow(hydr, hydrmax)}"),
                     hydr,
                     LocaleManager.Get($"health_bio_energy_color_{HealthPanel.HealthStatusLow(energy, energymax)}"),
@@ -269,8 +306,9 @@ namespace EFTBallisticCalculator.HUD
                 y += lh;
             }
 
-            y += 4f; // 队员间隙
+            y += 4f;
         }
+
         private static int GetPlayerSide(Player player)
         {
             if (player == null) return 0;
@@ -282,6 +320,7 @@ namespace EFTBallisticCalculator.HUD
             }
             return 0;
         }
+
         private static string GetLatinName(string nickname)
         {
             if (string.IsNullOrEmpty(nickname)) return "UNKNOWN";
@@ -301,6 +340,7 @@ namespace EFTBallisticCalculator.HUD
             }
         }
 
+
         private static bool IsAllEnglish(string str)
         {
             for (int i = 0; i < str.Length; i++)
@@ -316,6 +356,18 @@ namespace EFTBallisticCalculator.HUD
                 }
             }
             return true;
+        }
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SafeCallFikaUpdate()
+        {
+            // JIT 只有在 _isFikaLoaded 为 true 时，才会进入这里并解析 FikaIntegration
+            FikaIntegration.UpdateFikaTeammateStatus(_roster);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SafeCallFikaStats(IHealthController healthCtrl, out float hydr, out float hydrmax, out float energy, out float energymax)
+        {
+            FikaIntegration.TryGetFikaStats(healthCtrl, out hydr, out hydrmax, out energy, out energymax);
         }
     }
 }
