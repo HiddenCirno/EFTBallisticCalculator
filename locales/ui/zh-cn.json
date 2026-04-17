@@ -106,7 +106,7 @@
         "team_teammate_color_2": "#007CFF",
         "team_teammate_color_dead": "#808080",
         "team_teammate_level": "<color=#7FFF00>{0}级</color>",
-        "team_teammate_alive": "<color={0}><b>{1} {2}</b></color> {3} (<color={4}>{5:F0}</color>/{6:F0}) {7}",
+        "team_teammate_alive": "<color={0}><b>{1} {2}</b></color> {3} (<color={4}>{5:F0}</color> / {6:F0}) {7}",
         "team_teammate_dead": "<color={0}><b>{1} {2}</b></color> {3}",
         "team_teammate_status": " └ 水分 : <color={0}>{1:F0}</color> | 能量 : <color={2}>{3:F0}</color>",
         "grenade_title": "--- 可用投掷物 ---",
@@ -125,6 +125,18 @@
         "weapon_mag_color_1": "#FFFF00",
         "weapon_mag_color_2": "#FFFFFF",
         "weapon_ammo": "射击模式 : <color=#FFAA00>{0}</color> | {1} | 枪膛 : <color=#55FF55>{2}</color> >> 下一发弹药 : {3}",
-        "team_teammate_color_loading": "#FFFF00"
+        "team_teammate_color_loading": "#FFFF00",
+        "boss_title": "<b>[ 发现高威胁单位 ]</b>",
+        "boss_text_distance":"<color=#FFFF00>{0:F0} 米</color>",
+        "boss_boss_tag": "[BOSS]",
+        "boss_boss_color": "#CE0000",
+        "boss_cultist_tag": "[邪教徒]",
+        "boss_cultist_color": "#ADFF2F",
+        "boss_santa_tag": "[圣诞老人]",
+        "boss_santa_color": "#00FFFF",
+        "boss_bloodhound_tag": "[寻血猎犬]",
+        "boss_bloodhound_color": "#4160E1",
+        "boss_blackfox_tag": "[黑狐小队]",
+        "boss_blackfox_color": "#DC143C"
     }
 }

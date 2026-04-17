@@ -146,6 +146,18 @@
         "cfg_throw_rect_name": "Panel Width",
         "cfg_throw_rect_desc": "Horizontal width constraint for the Throwable ordnance panel.",
         "cfg_team_rect_name": "Panel Width",
-        "cfg_team_rect_desc": "Horizontal width constraint for the Squad Biometrics panel."
+        "cfg_team_rect_desc": "Horizontal width constraint for the Squad Biometrics panel.",
+        "cfg_boss_x_name": "Boss X Offset",
+        "cfg_boss_x_desc": "Independent X-axis offset for the Boss Tracker panel.",
+        "cfg_boss_y_name": "Boss Y Offset",
+        "cfg_boss_y_desc": "Independent Y-axis offset for the Boss Tracker panel.",
+        "cfg_boss_scale_name": "Boss Scale",
+        "cfg_boss_scale_desc": "Independent scaling factor for the Boss Tracker panel.",
+        "cfg_boss_active_name": "Show Boss Panel",
+        "cfg_boss_active_desc": "Enable or disable the Hostile Boss Tracker display.",
+        "cfg_boss_color_name": "Boss Color",
+        "cfg_boss_color_desc": "Default warning color for the Boss Tracker panel.",
+        "cfg_boss_rect_name": "Panel Width",
+        "cfg_boss_rect_desc": "Horizontal width constraint for the Boss Tracker panel."
     }
 }

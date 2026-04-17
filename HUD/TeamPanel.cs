@@ -51,7 +51,7 @@ namespace EFTBallisticCalculator.HUD
         public static void InitCfg(ConfigFile config)
         {
             // ... (原有的 Bind 代码保持完全不变) ...
-            OffsetX = config.Bind("Team Panel / 队伍数据", "X轴偏移", -50f,
+            OffsetX = config.Bind("Team Panel / 队伍数据", "X轴偏移", 0f,
                 new ConfigDescription(CfgLocaleManager.Get("cfg_team_x_desc"),
                 new AcceptableValueRange<float>(-1920f, 1920f),
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_team_x_name"), IsAdvanced = true }));
@@ -347,7 +347,7 @@ namespace EFTBallisticCalculator.HUD
             return 0;
         }
 
-        private static string GetLatinName(string nickname)
+        public static string GetLatinName(string nickname)
         {
             if (string.IsNullOrEmpty(nickname)) return "UNKNOWN";
 
@@ -367,7 +367,7 @@ namespace EFTBallisticCalculator.HUD
         }
 
 
-        private static bool IsAllEnglish(string str)
+        public static bool IsAllEnglish(string str)
         {
             for (int i = 0; i < str.Length; i++)
             {
