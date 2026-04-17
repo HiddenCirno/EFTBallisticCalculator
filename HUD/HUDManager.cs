@@ -143,6 +143,7 @@ namespace EFTBallisticCalculator.HUD
             HealthPanel.InitCfg(config);
             ActiveBuffPanel.InitCfg(config);
             TeamPanel.InitCfg(config);
+            BossPanel.InitCfg(config);
             WeaponPanel.InitCfg(config);
             ThrowablePanel.InitCfg(config); // 别忘了初始化我们新加的投掷物面板
         }
@@ -164,44 +165,51 @@ namespace EFTBallisticCalculator.HUD
             bool hasWeapon = PluginsCore.CorrectPlayer.HandsController as EFT.Player.FirearmController != null;
             UpdateRainbowColor();
 
-            // ==========================================
-            // 1. 渲染左侧面板流 (动态双列布局)
+            // 1. 渲染左侧面板流 (严格左侧优先的矩阵填充布局)
             // ==========================================
             float leftStartX = GlobalOffsetX.Value;
             float leftStartY = (Screen.height / 2f) + GlobalStartYOffset.Value;
             float leftScale = GlobalScale.Value;
 
-            float columnSpacing = 350f * leftScale; // 两列之间的横向间距，可根据需要微调
-            float rowSpacing = PanelSpacing.Value * leftScale; // 上下间距
+            float columnSpacing = 350f * leftScale;
+            float rowSpacing = PanelSpacing.Value * leftScale;
+            float rightStartX = leftStartX + columnSpacing;
 
-            float currentX = leftStartX;
-            float currentY = leftStartY;
-            float nextRowY = leftStartY; // 记录下一行(即环境面板)应该挂在什么高度
+            // 记录已经成功画出了几个面板
+            int drawnPanelsCount = 0;
+            float currentLeftY = leftStartY;
+            float currentRightY = leftStartY;
 
-            // --- A. 尝试绘制 火控面板 (FCS) ---
-            float fcsBottomY = FCSPanel.Draw(currentX, currentY, leftScale, hasWeapon);
-            bool fcsDrawn = fcsBottomY > currentY; // 如果底部坐标变大了，说明画出来了
-            if (fcsDrawn)
+            // 声明一个局部函数：负责自动找坑位
+            void TryDraw(System.Func<float, float, float> drawFunc)
             {
-                // 环境面板要挂在火控下面
-                nextRowY = fcsBottomY + rowSpacing;
+                if (drawnPanelsCount < 2)
+                {
+                    // 第 1、2 个面板，强制去左列！
+                    float newY = drawFunc(leftStartX, currentLeftY);
+                    if (newY > currentLeftY)
+                    {
+                        currentLeftY = newY + rowSpacing;
+                        drawnPanelsCount++;
+                    }
+                }
+                else
+                {
+                    // 第 3、4 个面板，去右列！
+                    float newY = drawFunc(rightStartX, currentRightY);
+                    if (newY > currentRightY)
+                    {
+                        currentRightY = newY + rowSpacing;
+                        drawnPanelsCount++;
+                    }
+                }
             }
 
-            // --- B. 尝试绘制 队伍面板 (Team) ---
-            // 神奇的逻辑：如果 FCS 画了，Team 往右挪作第二列；如果 FCS 没画，Team 直接抢占第一列！
-            float teamStartX = fcsDrawn ? currentX + columnSpacing : currentX;
-            float teamBottomY = TeamPanel.Draw(teamStartX, currentY, leftScale);
-            bool teamDrawn = teamBottomY > currentY;
-
-            // 如果 FCS 没画，且 Team 画了，那么 Team 占据了一号位，环境面板必须挂在 Team 的下面！
-            if (!fcsDrawn && teamDrawn)
-            {
-                nextRowY = teamBottomY + rowSpacing;
-            }
-
-            // --- C. 绘制 环境面板 (Env) ---
-            // 环境面板永远当小弟，挂在在一号位的正下方（nextRowY）
-            EnvPanel.Draw(currentX, nextRowY, leftScale);
+            // 严格按照你期望的优先级（排队顺序）执行：火控 -> 环境 -> 队伍 -> Boss
+            TryDraw((x, y) => FCSPanel.Draw(x, y, leftScale, hasWeapon));
+            TryDraw((x, y) => EnvPanel.Draw(x, y, leftScale));
+            TryDraw((x, y) => TeamPanel.Draw(x, y, leftScale));
+            TryDraw((x, y) => BossPanel.Draw(x, y, leftScale));
 
             // ==========================================
             // 2. 渲染右侧面板流 (Health -> Buff)

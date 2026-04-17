@@ -49,9 +49,9 @@ namespace EFTBallisticCalculator.HUD
                 new ConfigurationManagerAttributes { DispName = CfgLocaleManager.Get("cfg_env_rect_name"), IsAdvanced = true }));
         }
 
-        public static void Draw(float startX, float startY, float globalScale)
+        public static float Draw(float startX, float startY, float globalScale)
         {
-            if (!Active.Value) return;
+            if (!Active.Value) return startY;
             float finalScale = globalScale * Scale.Value;
             float finalX = startX + OffsetX.Value;
             float finalY = startY + OffsetY.Value;
@@ -142,6 +142,8 @@ namespace EFTBallisticCalculator.HUD
             HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 9, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_press"), pressVal), atmosColor, textStyle);
             HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 10, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_hum"), humVal), atmosColor, textStyle);
             HUDManager.DrawShadowLabel(new Rect(finalX, finalY + lh * 11, rectWidth, lh), string.Format(LocaleManager.Get("env_lbl_temp"), tempVal), atmosColor, textStyle);
+
+            return finalY + (lh * 12f);
         }
     }
 }
