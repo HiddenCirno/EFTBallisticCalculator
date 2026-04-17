@@ -129,7 +129,7 @@ namespace EFTBallisticCalculator.HUD
                 drawRect = new Rect(padding, currentY, Screen.width - (padding * 2), lh);
             }
 
-            GUIStyle nadeStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = (int)(13 * finalScale), alignment = anchor };
+            GUIStyle nadeStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = (int)(13 * finalScale), alignment = anchor }.ApplyTarkovFont();
             UnityEngine.Color mainColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : HUDManager.UIColorOverride.Value ? HUDManager.OverrideColor.Value : Color.Value;
 
             HUDManager.DrawShadowLabel(drawRect, LocaleManager.Get("grenade_title"), mainColor, nadeStyle);

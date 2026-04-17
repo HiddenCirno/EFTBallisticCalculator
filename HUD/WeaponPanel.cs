@@ -91,9 +91,9 @@ namespace EFTBallisticCalculator.HUD
 
             float currentY = startY + OffsetY.Value * finalScale;
 
-            GUIStyle nameStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = nameSize, alignment = TextAnchor.MiddleCenter };
-            GUIStyle statStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = statSize, alignment = TextAnchor.MiddleCenter };
-            GUIStyle ammoStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = ammoSize, alignment = TextAnchor.MiddleCenter };
+            GUIStyle nameStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = nameSize, alignment = TextAnchor.MiddleCenter }.ApplyTarkovFont();
+            GUIStyle statStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = statSize, alignment = TextAnchor.MiddleCenter }.ApplyTarkovFont();
+            GUIStyle ammoStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = ammoSize, alignment = TextAnchor.MiddleCenter }.ApplyTarkovFont();
             UnityEngine.Color mainColor = HUDManager.RainbowUI.Value ? HUDManager.RainbowColor : HUDManager.UIColorOverride.Value ? HUDManager.OverrideColor.Value : Color.Value;
 
             // ==========================================

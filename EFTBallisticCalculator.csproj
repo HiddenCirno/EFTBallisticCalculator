@@ -40,6 +40,11 @@
 			<HintPath>I:\TKF\EscapeFromTarkov_Data\Managed\Newtonsoft.Json.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+
+		<Reference Include="Unity.TextMeshPro">
+		  <HintPath>I:\TKF\EscapeFromTarkov_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+		  <Private>False</Private>
+		</Reference>
 	</ItemGroup>
 
 	<ItemGroup>
