@@ -94,6 +94,7 @@
         "health_endur_lower_stam_color": "#2F9881",
         "health_buff_title": "<b>[ 状态效果 ]</b>",
         "health_buff_time": "({0:F0}秒)",
+        "buff_painkiller_name": "止痛药生效中",
         "team_title": "<b>[ 小队成员 ]</b>",
         "team_you": "[你]",
         "team_ally": "[队友]",

@@ -86,7 +86,12 @@ namespace EFTBallisticCalculator.HUD
 
                 string timeStr = displayTime > 0 ? string.Format(LocaleManager.Get("health_buff_time"), displayTime) : "";
                 string valueStr = buff.Strength != 0 ? $" {(buff.Strength > 0 ? "+" : "")}{buff.Strength:G3}" : "";
-                string display = $"{buff.Name}{valueStr} {timeStr}";
+                var name = buff.Name;
+                if(buff.Name.ToLower() == "painkiller")
+                {
+                    name = LocaleManager.Get("buff_painkiller_name");
+                }
+                string display = $"{name}{valueStr} {timeStr}";
 
                 HUDManager.DrawShadowLabel(new Rect(finalX, currentY, rectWidth, lh), display, mainColor, textStyle);
                 currentY += lh;

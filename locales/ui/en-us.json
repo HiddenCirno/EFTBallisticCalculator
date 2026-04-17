@@ -94,6 +94,7 @@
         "health_endur_lower_stam_color": "#2F9881",
         "health_buff_title": "<b>[ ACTIVE STATUS ]</b>",
         "health_buff_time": "({0:F0}s)",
+        "buff_painkiller_name": "On painkillers",
         "team_title": "<b>[ SQUAD BIOMETRICS ]</b>",
         "team_you": "[YOU]",
         "team_ally": "[ALLY]",
