@@ -8,6 +8,6 @@ namespace EFTBallisticCalculator
     {
         public const string GUID = "eft.hiddenhiraigi.ballisticcalculator";
         public const string NAME = "Modern Tac HUD";
-        public const string VERSION = "1.0.0";
+        public const string VERSION = "1.1.0";
     }
 }
