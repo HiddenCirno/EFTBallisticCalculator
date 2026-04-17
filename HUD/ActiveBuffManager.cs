@@ -25,6 +25,7 @@ namespace EFTBallisticCalculator.HUD
         private static Player _localPlayer;
         private static IHealthController _healthController;
         private static Type _ipbType;
+        private static Type _ieffectType; // 【新增】IEffect 接口类型缓存
         private static bool _ipbSearched;
         private static bool _eventsSubscribed;
         private static bool _deepScanDone;
@@ -146,6 +147,11 @@ namespace EFTBallisticCalculator.HUD
                     if (!GetBoolProp(buff, "Active", true)) { _deadKeys.Add(kv.Key); continue; }
 
                     string buffName = GetStringProp(buff, "BuffName");
+                    if (string.IsNullOrEmpty(buffName))
+                    {
+                        // 经过 GetBuffKey 的过滤，能走到这里的无名氏绝对只有止痛药了
+                        buffName = "PainKiller";
+                    }
                     if (string.IsNullOrEmpty(buffName)) continue;
 
                     float value = GetFloatProp(buff, "Value");
@@ -233,6 +239,10 @@ namespace EFTBallisticCalculator.HUD
             float selfTL = GetFloatProp(buff, "TimeLeft");
             if (selfTL > 0 && selfTL < 100000f && selfTL > best) best = selfTL;
 
+            // 【新增】：针对 IEffect 专属的 RemainingTime
+            float remainingTL = GetFloatProp(buff, "RemainingTime");
+            if (remainingTL > 0 && remainingTL < 100000f && remainingTL > best) best = remainingTL;
+
             return best;
         }
 
@@ -254,23 +264,27 @@ namespace EFTBallisticCalculator.HUD
         {
             if (_eventsSubscribed) return;
             _eventsSubscribed = true;
-            ResolveIPB();
-            if (_ipbType == null) return;
+            ResolveTypes();
 
             try
             {
                 object hc = _healthController;
-                var actionType = typeof(Action<>).MakeGenericType(_ipbType);
-                var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
-
+                var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
                 var t = hc.GetType();
+
                 while (t != null && t != typeof(object))
                 {
-                    foreach (var f in t.GetFields(flags | BindingFlags.DeclaredOnly))
+                    foreach (var f in t.GetFields(flags))
                     {
-                        if (f.FieldType != actionType) continue;
+                        bool isIPB = _ipbType != null && f.FieldType == typeof(Action<>).MakeGenericType(_ipbType);
+                        bool isEffect = _ieffectType != null && f.FieldType == typeof(Action<>).MakeGenericType(_ieffectType);
+
+                        if (!isIPB && !isEffect) continue;
+
                         bool isRemove = f.Name.Contains("1") || f.Name.ToLower().Contains("remove");
-                        var handler = BuildActionDelegate(isRemove);
+                        Type targetType = isIPB ? _ipbType : _ieffectType;
+
+                        var handler = BuildActionDelegate(isRemove, targetType);
                         if (handler == null) continue;
 
                         var existing = (Delegate)f.GetValue(hc);
@@ -283,11 +297,11 @@ namespace EFTBallisticCalculator.HUD
             catch { }
         }
 
-        private static Delegate BuildActionDelegate(bool isRemove)
+        private static Delegate BuildActionDelegate(bool isRemove, Type targetType)
         {
             try
             {
-                var actionType = typeof(Action<>).MakeGenericType(_ipbType);
+                var actionType = typeof(Action<>).MakeGenericType(targetType);
                 var wrapper = new BuffEventWrapper(isRemove);
                 var mi = typeof(BuffEventWrapper).GetMethod("Handle");
                 return Delegate.CreateDelegate(actionType, wrapper, mi);
@@ -350,9 +364,26 @@ namespace EFTBallisticCalculator.HUD
         {
             try
             {
+                // 先尝试拿它正儿八经的名字 (IPlayerBuff 都有)
                 string name = GetStringProp(buff, "BuffName");
-                if (string.IsNullOrEmpty(name)) return null;
-                string bodyPart = GetStringProp(buff, "BodyPart");
+
+                // 【白名单核心】：如果没有名字，说明它是 IEffect 底层机制
+                if (string.IsNullOrEmpty(name))
+                {
+                    string typeName = buff.GetType().Name;
+                    // 只有类名包含 PainKiller 的，才允许它伪装成 "PainKiller" 混进来
+                    if (typeName.IndexOf("PainKiller", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        name = "PainKiller";
+                    }
+                    else
+                    {
+                        // 其它所有的 Existence, Stimulator, Med(1s) 全部在这里被无情抛弃！
+                        return null;
+                    }
+                }
+
+                string bodyPart = GetStringProp(buff, "BodyPart") ?? "Global";
                 float value = GetFloatProp(buff, "Value");
                 int hash = buff.GetHashCode();
                 return $"{name}|{bodyPart}|{(value >= 0 ? "+" : "-")}|{hash}";
@@ -365,7 +396,7 @@ namespace EFTBallisticCalculator.HUD
         {
             if (_deepScanDone) return;
             _deepScanDone = true;
-            ResolveIPB();
+            ResolveTypes();
             _scanVisited.Clear();
             DeepScan(_healthController, 0, 5, _scanVisited, "HC");
             ScanEffectsForBuffs(_scanVisited);
@@ -425,7 +456,7 @@ namespace EFTBallisticCalculator.HUD
             if (type.Namespace?.StartsWith("UnityEngine") == true) return 0;
 
             int found = 0;
-            if (IsIPB(obj))
+            if (IsBuffOrEffect(obj))
             {
                 found += CaptureBuffFromScan(obj, path);
                 return found;
@@ -478,7 +509,7 @@ namespace EFTBallisticCalculator.HUD
 
         private static int CaptureBuffFromScan(object buff, string path)
         {
-            if (!IsIPB(buff)) return 0;
+            if (!IsBuffOrEffect(buff)) return 0;
             string key = GetBuffKey(buff);
             if (string.IsNullOrEmpty(key) || _capturedBuffs.ContainsKey(key)) return 0;
             _capturedBuffs[key] = buff;
@@ -496,7 +527,7 @@ namespace EFTBallisticCalculator.HUD
             }
         }
 
-        private static void ResolveIPB()
+        private static void ResolveTypes()
         {
             if (_ipbSearched) return;
             _ipbSearched = true;
@@ -504,22 +535,26 @@ namespace EFTBallisticCalculator.HUD
             {
                 if (!asm.FullName.Contains("Assembly-CSharp")) continue;
                 foreach (var t in asm.GetTypes())
-                    if (t.Name == "IPlayerBuff" && t.IsInterface)
+                {
+                    if (t.IsInterface)
                     {
-                        _ipbType = t;
-                        return;
+                        if (t.Name == "IPlayerBuff") _ipbType = t;
+                        if (t.Name == "IEffect") _ieffectType = t;
                     }
+                    if (_ipbType != null && _ieffectType != null) return;
+                }
             }
         }
 
-        private static bool IsIPB(object obj)
+        private static bool IsBuffOrEffect(object obj)
         {
             if (obj == null) return false;
             if (_ipbType != null && _ipbType.IsInstanceOfType(obj)) return true;
+            if (_ieffectType != null && _ieffectType.IsInstanceOfType(obj)) return true;
+
             var type = obj.GetType();
-            return GetPropertyCached(type, "BuffName") != null &&
-                   GetPropertyCached(type, "Value") != null &&
-                   GetPropertyCached(type, "Active") != null;
+            return GetPropertyCached(type, "BuffName") != null ||
+                   GetPropertyCached(type, "RemainingTime") != null; // IEffect 的特征
         }
 
         // ==========================================
